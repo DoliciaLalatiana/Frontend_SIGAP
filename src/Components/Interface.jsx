@@ -1120,11 +1120,12 @@ export default function Interface({ user }) {
 
   const isSearchDisabled = showStatistique || showUserPage || showPendingResidences;
 
+
   const handleLogout = () => {
     localStorage.removeItem('interfaceState');
     localStorage.removeItem("token");
     localStorage.removeItem("user");
-    window.location.href = "/login";
+    navigate('/');
   };
 
   const handleLogoClick = () => {
