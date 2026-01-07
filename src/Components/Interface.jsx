@@ -1120,7 +1120,6 @@ export default function Interface({ user }) {
 
   const isSearchDisabled = showStatistique || showUserPage || showPendingResidences;
 
-  const navigate = useNavigate(); 
 
   const handleLogout = () => {
     localStorage.removeItem('interfaceState');
@@ -1128,6 +1127,7 @@ export default function Interface({ user }) {
     localStorage.removeItem("user");
     window.location.href = "/";
   };
+  
 
   const handleLogoClick = () => {
     console.log('=== NAVIGATION HIÉRARCHIQUE SIMPLIFIÉE ===');
