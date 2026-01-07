@@ -192,6 +192,7 @@ export default function Interface({ user }) {
   const [savingResidence, setSavingResidence] = useState(false);
   const [modalError, setModalError] = useState('');
   const [selectedResidenceFromSearch, setSelectedResidenceFromSearch] = useState(null);
+  const [initialDataLoaded, setInitialDataLoaded] = useState(false);
 
   const dropdownRef = useRef(null);
   const searchRef = useRef(null);
@@ -404,11 +405,15 @@ export default function Interface({ user }) {
 
   const fetchResidences = async () => {
     try {
-      console.log('[RES] fetchResidences: starting...');
+      console.log('[RES] fetchResidences: starting... with fokontanyName:', fokontanyName);
       let url = `${API_BASE}/api/residences`;
-      if (fokontanyName) {
-        url += `?fokontany=${encodeURIComponent(fokontanyName)}`;
-        console.log('[RES] Fetching with fokontany:', fokontanyName);
+      
+      // Utiliser fokontanyName ou le nom de l'utilisateur
+      const fokontanyToUse = fokontanyName || currentUser?.fokontany?.nom || 'Andaboly';
+      
+      if (fokontanyToUse) {
+        url += `?fokontany=${encodeURIComponent(fokontanyToUse)}`;
+        console.log('[RES] Fetching with fokontany:', fokontanyToUse);
       }
 
       const resp = await fetch(url);
@@ -775,12 +780,44 @@ export default function Interface({ user }) {
     );
   };
 
+  // USE EFFECT POUR CHARGER LES DONNÉES APRÈS AUTHENTIFICATION
   useEffect(() => {
-    console.log('[APP] Component mounted, loading data...');
+    console.log('[APP] useEffect principal - chargement après auth');
 
-    fetchAllNotifications();
-    fetchResidences();
+    // Fonction pour charger toutes les données
+    const loadAllData = async () => {
+      try {
+        console.log('[APP] loadAllData: starting...');
+        
+        // 1. Charger les notifications
+        await fetchAllNotifications();
+        
+        // 2. Charger le fokontany de l'utilisateur
+        await loadMyFokontany();
+        
+        // 3. Attendre que fokontanyName soit disponible puis charger les résidences
+        if (fokontanyName) {
+          console.log('[APP] fokontanyName disponible:', fokontanyName);
+          await fetchResidences();
+        } else {
+          // Si fokontanyName n'est pas encore disponible, réessayer après un délai
+          setTimeout(() => {
+            console.log('[APP] Retry fetchResidences après délai');
+            fetchResidences();
+          }, 500);
+        }
+        
+        setInitialDataLoaded(true);
+        console.log('[APP] Toutes les données chargées');
+      } catch (error) {
+        console.error('[APP] Erreur lors du chargement des données:', error);
+      }
+    };
 
+    // Exécuter le chargement initial
+    loadAllData();
+
+    // Configurer l'intervalle pour les notifications
     const interval = setInterval(() => {
       console.log('[APP] Refreshing notifications...');
       fetchAllNotifications();
@@ -790,14 +827,31 @@ export default function Interface({ user }) {
       console.log('[APP] Component unmounting...');
       clearInterval(interval);
     };
-  }, []);
+  }, []); // Exécuté une seule fois au montage
 
+  // USE EFFECT POUR CHARGER LES RÉSIDENCES QUAND fokontanyName CHANGE
   useEffect(() => {
-    if (fokontanyName) {
-      console.log('[APP] fokontanyName changed:', fokontanyName);
+    console.log('[APP] useEffect fokontanyName changed:', fokontanyName);
+    
+    if (fokontanyName && initialDataLoaded) {
+      console.log('[APP] Rechargement des résidences pour nouveau fokontany:', fokontanyName);
       fetchResidences();
     }
-  }, [fokontanyName]);
+  }, [fokontanyName, initialDataLoaded]);
+
+  // USE EFFECT POUR METTRE À JOUR L'UTILISATEUR COURANT
+  useEffect(() => {
+    if (user) {
+      console.log('[APP] User prop updated:', user);
+      setCurrentUser(user);
+      
+      // Si l'utilisateur a un fokontany différent
+      if (user.fokontany?.nom && user.fokontany.nom !== fokontanyName) {
+        console.log('[APP] Mise à jour fokontanyName depuis user:', user.fokontany.nom);
+        setFokontanyName(user.fokontany.nom);
+      }
+    }
+  }, [user]);
 
   useEffect(() => {
     if (showPendingResidences && currentUser?.role === 'secretaire') {
@@ -913,51 +967,52 @@ export default function Interface({ user }) {
     return { center, zoom: 17 };
   };
 
-  useEffect(() => {
-    const loadMyFokontany = async () => {
-      try {
-        console.log('[FOK] loadMyFokontany: starting request to /api/fokontany/me');
-        const token = localStorage.getItem('token');
-        if (!token) {
-          console.log('[FOK] loadMyFokontany: no token found in localStorage');
-          return;
-        }
-        const resp = await fetch(`${API_BASE}/api/fokontany/me`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        console.log('[FOK] loadMyFokontany: response status', resp.status);
-        if (!resp.ok) {
-          console.warn('[FOK] loadMyFokontany: non-ok response', await resp.text());
-          return;
-        }
-        const f = await resp.json();
-        console.log('[FOK] loadMyFokontany: body received', f);
-        let coordsRaw = f.coordinates ?? f.geometry ?? null;
-        const poly = normalizeCoordinates(coordsRaw);
-        console.log('[FOK] loadMyFokontany: parsed polygon length', poly ? poly.length : 0);
-        setFokontanyPolygon(poly);
-
-        if (f.nom) {
-          setFokontanyName(f.nom);
-        }
-
-        if (f.centre_lat && f.centre_lng) {
-          setFokontanyCenter({ lat: parseFloat(f.centre_lat), lng: parseFloat(f.centre_lng) });
-          console.log('[FOK] loadMyFokontany: using centre_lat/centre_lng', f.centre_lat, f.centre_lng);
-        } else if (poly && poly.length) {
-          const lat = poly.reduce((s, p) => s + p.lat, 0) / poly.length;
-          const lng = poly.reduce((s, p) => s + p.lng, 0) / poly.length;
-          setFokontanyCenter({ lat, lng });
-          console.log('[FOK] loadMyFokontany: computed center', { lat, lng });
-        } else {
-          console.log('[FOK] loadMyFokontany: no coordinates or center available for fokontany');
-        }
-      } catch (err) {
-        console.warn('[FOK] loadMyFokontany failed', err);
+  // FONCTION POUR CHARGER LE FOKONTANY
+  const loadMyFokontany = async () => {
+    try {
+      console.log('[FOK] loadMyFokontany: starting request to /api/fokontany/me');
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.log('[FOK] loadMyFokontany: no token found in localStorage');
+        return;
       }
-    };
-    loadMyFokontany();
-  }, []);
+      const resp = await fetch(`${API_BASE}/api/fokontany/me`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      console.log('[FOK] loadMyFokontany: response status', resp.status);
+      if (!resp.ok) {
+        console.warn('[FOK] loadMyFokontany: non-ok response', await resp.text());
+        return;
+      }
+      const f = await resp.json();
+      console.log('[FOK] loadMyFokontany: body received', f);
+      
+      // Définir le nom du fokontany en premier
+      if (f.nom) {
+        console.log('[FOK] Setting fokontanyName to:', f.nom);
+        setFokontanyName(f.nom);
+      }
+      
+      let coordsRaw = f.coordinates ?? f.geometry ?? null;
+      const poly = normalizeCoordinates(coordsRaw);
+      console.log('[FOK] loadMyFokontany: parsed polygon length', poly ? poly.length : 0);
+      setFokontanyPolygon(poly);
+
+      if (f.centre_lat && f.centre_lng) {
+        setFokontanyCenter({ lat: parseFloat(f.centre_lat), lng: parseFloat(f.centre_lng) });
+        console.log('[FOK] loadMyFokontany: using centre_lat/centre_lng', f.centre_lat, f.centre_lng);
+      } else if (poly && poly.length) {
+        const lat = poly.reduce((s, p) => s + p.lat, 0) / poly.length;
+        const lng = poly.reduce((s, p) => s + p.lng, 0) / poly.length;
+        setFokontanyCenter({ lat, lng });
+        console.log('[FOK] loadMyFokontany: computed center', { lat, lng });
+      } else {
+        console.log('[FOK] loadMyFokontany: no coordinates or center available for fokontany');
+      }
+    } catch (err) {
+      console.warn('[FOK] loadMyFokontany failed', err);
+    }
+  };
 
   useEffect(() => {
     const savedState = localStorage.getItem('interfaceState');
@@ -2680,7 +2735,7 @@ export default function Interface({ user }) {
             disabled={isAddAddressModalOpen}
             className={`w-full flex items-center px-4 py-3 transition-all duration-200 ${isAddAddressModalOpen
               ? 'cursor-not-allowed opacity-70'
-              : 'hover:bg-gray-100'
+              : ''
               }`}
             style={{ height: "44px" }}
           >
@@ -2739,47 +2794,102 @@ export default function Interface({ user }) {
           </div>
 
           <div className="p-4">
-            <div ref={menuDropdownRef} className="mb-4">
-              <button
-                data-menu-button
-                onClick={handleMenuButtonClick}
-                disabled={isAddAddressModalOpen}
-                className={`w-full flex items-center justify-between rounded-xl transition-all duration-200 mb-2 group-hover:bg-gray-100 ${isAddAddressModalOpen
-                  ? 'cursor-not-allowed opacity-70'
-                  : menuDropdownOpen
-                  ? "bg-gray-100 border border-gray-200"
-                  : "hover:bg-gray-100"
+            {/* Titre "Menu" toujours affiché */}
+            <div className="mb-4">
+              <div className="flex items-center gap-3 mb-3">
+                <Menu size={18} className="text-gray-700" />
+                <span className="text-sm font-semibold text-gray-900">
+                  {t('menu')}
+                </span>
+              </div>
+            
+              {/* MENU FIXE - Pas de collapse/expand */}
+              <div className="space-y-1">
+                {/* Résidences */}
+                <button
+                  onClick={() => {
+                    if (showResidence) {
+                      if (residenceDetailMode) {
+                        setResidenceDetailMode(false);
+                      } else {
+                        setShowResidence(false);
+                      }
+                    } else {
+                      openPage('residence');
+                    }
+                  }}
+                  className={`w-full flex items-center rounded-xl transition-all duration-200 hover:bg-gray-100 hover:border hover:border-gray-200 ${
+                    showResidence ? "bg-gray-100 border border-gray-200" : ""
                   }`}
-                style={{
-                  padding: "10px 12px",
-                  minHeight: "48px"
-                }}
-              >
-                <div className="flex items-center gap-3">
-                  <Menu size={18} className={`${isAddAddressModalOpen ? "text-gray-400" : menuDropdownOpen ? "text-gray-900" : "text-gray-700"} group-hover:text-gray-900`} />
-                  <span className={`group-hover:text-gray-900 ${menuDropdownOpen ? "text-gray-900" : ""}`} style={{
+                  style={{
+                    height: "44px",
+                    padding: "0 12px"
+                  }}
+                >
+                  <div style={{
+                    width: "36px",
+                    display: "flex",
+                    justifyContent: "center",
+                    marginRight: "10px"
+                  }}>
+                    <MapPin size={20} className={showResidence ? "text-gray-800" : "text-gray-700"} />
+                  </div>
+                  <span style={{
                     fontSize: "14px",
-                    fontWeight: menuDropdownOpen ? 600 : 500,
-                    color: isAddAddressModalOpen ? "#9ca3af" : menuDropdownOpen ? "#111827" : "#374151"
-                  }}>{t('menu')}</span>
-                </div>
-                <ChevronDown 
-                  size={16} 
-                  className={`transition-transform duration-200 ${menuDropdownOpen ? 'rotate-180' : ''} ${isAddAddressModalOpen ? "text-gray-400" : "text-gray-600"}`}
-                />
-              </button>
+                    fontWeight: 500,
+                    color: showResidence ? "#111827" : "#374151"
+                  }}>{t('residence')}</span>
+                </button>
 
-              {menuDropdownOpen && !isAddAddressModalOpen && (
-                <div className="mt-2 space-y-1 animate-fadeIn">
+                {/* Statistiques */}
+                <button
+                  onClick={() => {
+                    if (showStatistique) {
+                      setShowStatistique(false);
+                    } else {
+                      openPage('statistique');
+                    }
+                  }}
+                  className={`w-full flex items-center rounded-xl transition-all duration-200 hover:bg-gray-100 hover:border hover:border-gray-200 ${
+                    showStatistique ? "bg-gray-100 border border-gray-200" : ""
+                  }`}
+                  style={{
+                    height: "44px",
+                    padding: "0 12px"
+                  }}
+                >
+                  <div style={{
+                    width: "36px",
+                    display: "flex",
+                    justifyContent: "center",
+                    marginRight: "10px"
+                  }}>
+                    <BarChart3 size={20} className={showStatistique ? "text-gray-800" : "text-gray-700"} />
+                  </div>
+                  <span style={{
+                    fontSize: "14px",
+                    fontWeight: 500,
+                    color: showStatistique ? "#111827" : "#374151"
+                  }}>{t('statistics')}</span>
+                </button>
+
+                {/* Demandes en attente (seulement pour secrétaire) */}
+                {currentUser?.role === 'secretaire' && (
                   <button
-                    onClick={handleResidenceClick}
-                    className={`w-full flex items-center rounded-xl transition-all duration-200 ${showResidence
-                      ? "bg-gray-100 border border-gray-200"
-                      : "hover:bg-gray-100"
-                      }`}
+                    onClick={() => {
+                      if (showPendingResidences) {
+                        setShowPendingResidences(false);
+                        setResidenceToSelect(null);
+                      } else {
+                        openPage('pending');
+                      }
+                    }}
+                    className={`w-full flex items-center rounded-xl transition-all duration-200 hover:bg-gray-100 hover:border hover:border-gray-200 ${
+                      showPendingResidences ? "bg-gray-100 border border-gray-200" : ""
+                    }`}
                     style={{
                       height: "44px",
-                      padding: "0 12px 0 40px"
+                      padding: "0 12px"
                     }}
                   >
                     <div style={{
@@ -2788,70 +2898,16 @@ export default function Interface({ user }) {
                       justifyContent: "center",
                       marginRight: "10px"
                     }}>
-                      <MapPin size={20} className={showResidence ? "text-gray-800" : "text-gray-700"} />
+                      <ClipboardList size={20} className={showPendingResidences ? "text-gray-800" : "text-gray-700"} />
                     </div>
                     <span style={{
                       fontSize: "14px",
                       fontWeight: 500,
-                      color: showResidence ? "#111827" : "#374151"
-                    }}>{t('residence')}</span>
+                      color: showPendingResidences ? "#111827" : "#374151"
+                    }}>{t('requests')}</span>
                   </button>
-
-                  <button
-                    onClick={handleStatistiqueClick}
-                    className={`w-full flex items-center rounded-xl transition-all duration-200 ${showStatistique
-                      ? "bg-gray-100 border border-gray-200"
-                      : "hover:bg-gray-100"
-                      }`}
-                    style={{
-                      height: "44px",
-                      padding: "0 12px 0 40px"
-                    }}
-                  >
-                    <div style={{
-                      width: "36px",
-                      display: "flex",
-                      justifyContent: "center",
-                      marginRight: "10px"
-                    }}>
-                      <BarChart3 size={20} className={showStatistique ? "text-gray-800" : "text-gray-700"} />
-                    </div>
-                    <span style={{
-                      fontSize: "14px",
-                      fontWeight: 500,
-                      color: showStatistique ? "#111827" : "#374151"
-                    }}>{t('statistics')}</span>
-                  </button>
-
-                  {currentUser?.role === 'secretaire' && (
-                    <button
-                      onClick={handlePendingResidencesClick}
-                      className={`w-full flex items-center rounded-xl transition-all duration-200 ${showPendingResidences
-                        ? "bg-gray-100 border border-gray-200"
-                        : "hover:bg-gray-100"
-                        }`}
-                      style={{
-                        height: "44px",
-                        padding: "0 12px 0 40px"
-                      }}
-                    >
-                      <div style={{
-                        width: "36px",
-                        display: "flex",
-                        justifyContent: "center",
-                        marginRight: "10px"
-                      }}>
-                        <ClipboardList size={20} className={showPendingResidences ? "text-gray-800" : "text-gray-700"} />
-                      </div>
-                      <span style={{
-                        fontSize: "14px",
-                        fontWeight: 500,
-                        color: showPendingResidences ? "#111827" : "#374151"
-                      }}>{t('requests')}</span>
-                    </button>
-                  )}
-                </div>
-              )}
+                )}
+              </div>
             </div>
           </div>
         </div>

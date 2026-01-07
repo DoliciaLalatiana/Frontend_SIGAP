@@ -3,7 +3,7 @@ import { Check, X, MapPin, User, Clock, AlertCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 const PendingResidences = ({ onBack, onResidenceApproved, residenceToSelect }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [pendingResidences, setPendingResidences] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedResidence, setSelectedResidence] = useState(null);
@@ -11,6 +11,30 @@ const PendingResidences = ({ onBack, onResidenceApproved, residenceToSelect }) =
   const [notificationCleared, setNotificationCleared] = useState(false);
 
   const API_BASE = import.meta.env.VITE_API_BASE || '';
+
+  // Fonction pour traduire les valeurs qui viennent de l'API
+  const translateValue = (value) => {
+    if (!value) return value;
+    
+    // Mappez les valeurs spécifiques qui viennent de l'API
+    const translations = {
+      // Quartier/Neighborhood
+      'Fari-tany tsy fantatra': t('unknownNeighborhood'),
+      'Quartier inconnu': t('unknownNeighborhood'),
+      'Fari-tany tsy voafaritra': t('neighborhoodNotSpecified'),
+      'Quartier non spécifié': t('neighborhoodNotSpecified'),
+      
+      // Ville/City
+      'Tanàna tsy fantatra': t('unknownCity'),
+      'Ville inconnue': t('unknownCity'),
+      
+      // Lot
+      'Lot tsy voafaritra': t('lotNotSpecified'),
+      'Lot non spécifié': t('lotNotSpecified'),
+    };
+    
+    return translations[value] || value;
+  };
 
   const fetchPendingResidences = async () => {
     try {
@@ -55,7 +79,7 @@ const PendingResidences = ({ onBack, onResidenceApproved, residenceToSelect }) =
         }
       }
     } catch (error) {
-      console.error(t('error') + ' ' + t('markAsRead') + ':', error);
+      console.error(t('error') + ' ' + t('markAsMask') + ':', error);
     }
   };
 
@@ -129,7 +153,7 @@ const PendingResidences = ({ onBack, onResidenceApproved, residenceToSelect }) =
   const handleResidenceClick = (residence) => {
     setSelectedResidence(residence);
     setReviewNotes(t('residence') + ' "' + (residence.residence_data?.lot || '') + '" - ' +
-                  t('neighborhood') + ': ' + (residence.residence_data?.quartier || ''));
+                  t('neighborhood') + ': ' + translateValue(residence.residence_data?.quartier) || '');
     
     if (residence.id === residenceToSelect && !notificationCleared) {
       markNotificationAsRead(residence.id);
@@ -212,7 +236,7 @@ const PendingResidences = ({ onBack, onResidenceApproved, residenceToSelect }) =
   const formatDate = (dateString) => {
     try {
       const date = new Date(dateString);
-      return date.toLocaleDateString(t('locale') === 'mg' ? 'mg-MG' : 'fr-FR', {
+      return date.toLocaleDateString(i18n.language === 'mg' ? 'mg-MG' : 'fr-FR', {
         day: '2-digit',
         month: '2-digit',
         year: 'numeric',
@@ -275,7 +299,7 @@ const PendingResidences = ({ onBack, onResidenceApproved, residenceToSelect }) =
                       <div className="flex items-center space-x-2 mb-2">
                         <MapPin size={16} className="text-gray-600" />
                         <h3 className="font-semibold text-gray-800">
-                          {residence.residence_data?.lot || t('lotNotSpecified')}
+                          {translateValue(residence.residence_data?.lot) || t('lotNotSpecified')}
                         </h3>
                         {residence.id === residenceToSelect && !notificationCleared && (
                           <span className="text-xs px-2 py-1 bg-gray-800 text-white rounded-full animate-pulse">
@@ -290,7 +314,7 @@ const PendingResidences = ({ onBack, onResidenceApproved, residenceToSelect }) =
                       </div>
                       
                       <div className="text-sm text-gray-500 mb-2">
-                        {t('neighborhood')}: {residence.residence_data?.quartier || t('notSpecified')}
+                        {t('neighborhood')}: {translateValue(residence.residence_data?.quartier) || t('notSpecified')}
                       </div>
 
                       <div className="text-xs text-gray-400">
@@ -326,15 +350,15 @@ const PendingResidences = ({ onBack, onResidenceApproved, residenceToSelect }) =
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-gray-600">{t('lotNumber')}:</span>
-                    <span className="font-medium text-gray-800">{selectedResidence.residence_data?.lot || t('notSpecified')}</span>
+                    <span className="font-medium text-gray-800">{translateValue(selectedResidence.residence_data?.lot) || t('notSpecified')}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">{t('neighborhood')}:</span>
-                    <span className="font-medium text-gray-800">{selectedResidence.residence_data?.quartier || t('notSpecified')}</span>
+                    <span className="font-medium text-gray-800">{translateValue(selectedResidence.residence_data?.quartier) || t('notSpecified')}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">{t('city')}:</span>
-                    <span className="font-medium text-gray-800">{selectedResidence.residence_data?.ville || t('notSpecified')}</span>
+                    <span className="font-medium text-gray-800">{translateValue(selectedResidence.residence_data?.ville) || t('notSpecified')}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">{t('coordinates')}:</span>

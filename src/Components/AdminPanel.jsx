@@ -37,7 +37,7 @@ const AdminPanel = ({ onLogout, currentUser }) => {
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(4);
+  const [itemsPerPage] = useState(3);
 
   useEffect(() => {
     if (activeTab === 'users') {
@@ -55,7 +55,7 @@ const AdminPanel = ({ onLogout, currentUser }) => {
 
   // Obtenir le texte du bouton de langue
   const getLanguageButtonText = () => {
-    return i18n.language === 'fr' ? 'MG' : 'FR';
+    return i18n.language === 'fr' ? 'FR' : 'MG';
   };
 
   const fetchUsers = async () => {
