@@ -160,8 +160,6 @@ export default function Interface({ user }) {
   const [mapLoaded, setMapLoaded] = useState(false);
   const [addressDetails, setAddressDetails] = useState({
     lot: "",
-    nomResidence: "",
-    nomProprietaire: "",
     quartier: "",
     ville: ""
   });
@@ -187,7 +185,7 @@ export default function Interface({ user }) {
   const [residenceDetailMode, setResidenceDetailMode] = useState(false);
   const [fokontanyPolygon, setFokontanyPolygon] = useState(null);
   const [fokontanyCenter, setFokontanyCenter] = useState(null);
-  const [fokontanyName, setFokontanyName] = useState(null);
+  const [fokontanyName, setFokontanyName] = useState("Andaboly"); // Défaut: Andaboly
   const [residences, setResidences] = useState([]);
   const [addStep, setAddStep] = useState(1);
   const [newResidents, setNewResidents] = useState([]);
@@ -1016,8 +1014,6 @@ export default function Interface({ user }) {
       setHasSelectedAddress(false);
       setAddressDetails({
         lot: "",
-        nomResidence: "",
-        nomProprietaire: "",
         quartier: "",
         ville: ""
       });
@@ -1311,8 +1307,6 @@ export default function Interface({ user }) {
     setHasSelectedAddress(false);
     setAddressDetails({
       lot: "",
-      nomResidence: "",
-      nomProprietaire: "",
       quartier: "",
       ville: ""
     });
@@ -1371,8 +1365,6 @@ export default function Interface({ user }) {
       setSelectedAddress(fullAddress);
       setAddressDetails({
         lot: "",
-        nomResidence: "",
-        nomProprietaire: "",
         quartier: addressInfo.quartier,
         ville: addressInfo.ville
       });
@@ -1384,8 +1376,6 @@ export default function Interface({ user }) {
       setSelectedAddress(fallbackAddress);
       setAddressDetails({
         lot: "",
-        nomResidence: "",
-        nomProprietaire: "",
         quartier: t('unknownNeighborhood'),
         ville: t('unknownCity')
       });
@@ -1512,8 +1502,6 @@ export default function Interface({ user }) {
     setHasSelectedAddress(false);
     setAddressDetails({
       lot: "",
-      nomResidence: "",
-      nomProprietaire: "",
       quartier: "",
       ville: ""
     });
@@ -1531,8 +1519,6 @@ export default function Interface({ user }) {
     setHasSelectedAddress(false);
     setAddressDetails({
       lot: "",
-      nomResidence: "",
-      nomProprietaire: "",
       quartier: "",
       ville: ""
     });
@@ -1626,8 +1612,6 @@ export default function Interface({ user }) {
 
       const residencePayload = {
         lot: addressDetails.lot.trim(),
-        nom_residence: addressDetails.nomResidence || null,
-        nom_proprietaire: addressDetails.nomProprietaire || null,
         quartier: addressDetails.quartier || null,
         ville: addressDetails.ville || null,
         fokontany: fokontanyName || null,
@@ -1720,8 +1704,6 @@ export default function Interface({ user }) {
       const newResidence = {
         id: residenceId,
         lot: residenceResult.lot,
-        nom_residence: residenceResult.nom_residence,
-        nom_proprietaire: residenceResult.nom_proprietaire,
         quartier: residenceResult.quartier,
         ville: residenceResult.ville,
         fokontany: residenceResult.fokontany,
@@ -1730,8 +1712,8 @@ export default function Interface({ user }) {
         created_by: residenceResult.created_by,
         created_at: residenceResult.created_at,
         is_active: residenceResult.is_active,
-        name: residenceResult.nom_residence || residenceResult.lot,
-        proprietaire: residenceResult.nom_proprietaire
+        name: residenceResult.lot,
+        proprietaire: null
       };
 
       setResidences(prev => [newResidence, ...(prev || [])]);
@@ -1744,8 +1726,6 @@ export default function Interface({ user }) {
 
       setAddressDetails({ 
         lot: '', 
-        nomResidence: '', 
-        nomProprietaire: '', 
         quartier: '', 
         ville: '' 
       });
@@ -1782,8 +1762,6 @@ export default function Interface({ user }) {
     setHasSelectedAddress(false);
     setAddressDetails({
       lot: "",
-      nomResidence: "",
-      nomProprietaire: "",
       quartier: "",
       ville: ""
     });
@@ -1802,8 +1780,6 @@ export default function Interface({ user }) {
     setHasSelectedAddress(false);
     setAddressDetails({
       lot: "",
-      nomResidence: "",
-      nomProprietaire: "",
       quartier: "",
       ville: ""
     });
@@ -2437,32 +2413,6 @@ export default function Interface({ user }) {
                     )}
                   </div>
 
-                  <div className="space-y-4">
-                    <div>
-                      <input
-                        type="text"
-                        value={addressDetails.nomResidence || ''}
-                        onChange={(e) => handleAddressDetailsChange('nomResidence', e.target.value)}
-                        placeholder={t('residenceName')}
-                        className="w-full px-4 py-3 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        style={{ height: '42px', fontSize: '14px' }}
-                      />
-                      <p className="text-xs text-gray-500 mt-1 ml-1">{t('residenceNameExample')}</p>
-                    </div>
-
-                    <div>
-                      <input
-                        type="text"
-                        value={addressDetails.nomProprietaire || ''}
-                        onChange={(e) => handleAddressDetailsChange('nomProprietaire', e.target.value)}
-                        placeholder={t('ownerName')}
-                        className="w-full px-4 py-3 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        style={{ height: '42px', fontSize: '14px' }}
-                      />
-                      <p className="text-xs text-gray-500 mt-1 ml-1">{t('mainOwner')}</p>
-                    </div>
-                  </div>
-
                   <div className="space-y-4 pt-4 border-t border-gray-200">
                     <div className="flex justify-between items-center">
                       <h4 className="font-semibold text-gray-800 text-sm">{t('addResident')}</h4>
@@ -2756,6 +2706,37 @@ export default function Interface({ user }) {
               color: isAddAddressModalOpen ? "#9ca3af" : "#111827"
             }}>SIGAP</span>
           </button>
+
+          {/* Nouvelle section placée au-dessus du menu */}
+          <div className="p-4 border-b border-gray-200/60 bg-white/30">
+            {!isAnyPageOpen ? (
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <MapPin size={18} className="text-gray-700 mr-2" />
+                  <span className="text-sm font-medium text-gray-800">
+                    Carte {fokontanyName}
+                  </span>
+                </div>
+                
+              </div>
+            ) : (
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <MapPin size={18} className="text-gray-700 mr-2" />
+                  <span className="text-sm font-medium text-gray-800">
+                    {fokontanyName}
+                  </span>
+                </div>
+                <button
+                  onClick={handleLogoClick}
+                  className="text-xs text-gray-500 bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-lg transition-all duration-200 flex items-center"
+                >
+                  <Eye size={14} className="mr-1" />
+                  Voir carte
+                </button>
+              </div>
+            )}
+          </div>
 
           <div className="p-4">
             <div ref={menuDropdownRef} className="mb-4">

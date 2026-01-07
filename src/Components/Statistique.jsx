@@ -20,10 +20,25 @@ import {
 const API_BASE = import.meta.env.VITE_API_BASE || "";
 
 const Statistique = ({ onBack }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [selectedFokontany, setSelectedFokontany] = useState("Ampasikibo");
   const [statistics, setStatistics] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // Fonction pour obtenir les noms des mois selon la langue
+  const getLocalizedMonths = () => {
+    const currentLang = i18n.language;
+    
+    if (currentLang === 'mg') {
+      // Mois en malgache
+      return ["Janoary", "Febroary", "Martsa", "Aprily", "Mey", "Jona", 
+              "Jolay", "Aogositra", "Septambra", "Oktobra", "Novambra", "Desambra"];
+    }
+    
+    // Par défaut en français
+    return ["Jan", "Fév", "Mar", "Avr", "Mai", "Juin", 
+            "Juil", "Août", "Sep", "Oct", "Nov", "Dec"];
+  };
 
   // Charger les données réelles depuis l'API
   useEffect(() => {
@@ -96,6 +111,22 @@ const Statistique = ({ onBack }) => {
     fetchStatistics();
   }, []);
 
+  // Recharger les données quand la langue change
+  useEffect(() => {
+    if (statistics) {
+      // Regénérer les données de croissance avec les mois localisés
+      const newCroissanceData = genererDonneesCroissance(
+        statistics.totalResidences, 
+        statistics.totalResidents
+      );
+      
+      setStatistics(prev => ({
+        ...prev,
+        croissanceData: newCroissanceData
+      }));
+    }
+  }, [i18n.language]);
+
   // Fonction pour calculer la pyramide des âges
   const calculerPyramideAges = (persons) => {
     const groupes = [
@@ -145,7 +176,7 @@ const Statistique = ({ onBack }) => {
 
   // Générer des données de croissance basées sur les données actuelles
   const genererDonneesCroissance = (totalResidences, totalResidents) => {
-    const mois = ["Jan", "Fév", "Mar", "Avr", "Mai", "Juin", "Juil", "Août", "Sep", "Oct", "Nov", "Dec"];
+    const mois = getLocalizedMonths();
     const data = [];
     
     // Simulation de croissance progressive
@@ -197,7 +228,9 @@ const Statistique = ({ onBack }) => {
   const genererPDF = () => {
     if (!statistics) return;
 
-    const date = new Date().toLocaleDateString("fr-FR", {
+    // Format de date selon la langue
+    const locale = i18n.language === 'mg' ? 'mg-MG' : 'fr-FR';
+    const date = new Date().toLocaleDateString(locale, {
       weekday: "long",
       year: "numeric",
       month: "long",

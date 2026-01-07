@@ -1302,7 +1302,7 @@ export default function ResidencePage({
   const [sortBy, setSortBy] = useState("date");
   const [expandedResidence, setExpandedResidence] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [residencesPerPage] = useState(4);
+  const [residencesPerPage] = useState(3);
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
   const [newResident, setNewResident] = useState({
     nom: "",
@@ -2265,30 +2265,18 @@ export default function ResidencePage({
                 padding: '24px 32px'
               }}
             >
-              <div className="flex items-center justify-between">
-                <h1 
-                  className="text-black"
-                  style={{
-                    fontSize: '32px',
-                    fontWeight: '700',
-                    color: '#000000'
-                  }}
-                >
-                  {t('residencesList')}
-                </h1>
-                
-                <button
-                  onClick={switchLanguage}
-                  className="flex items-center justify-center bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors font-medium text-sm py-2 px-4 rounded-lg"
-                  style={{
-                    borderColor: '#D1D5DB',
-                    color: '#374151'
-                  }}
-                  title={i18n.language === 'fr' ? t('switchToMalagasy') : t('switchToFrench')}
-                >
-                  {i18n.language === 'fr' ? 'MG' : 'FR'}
-                </button>
-              </div>
+<div>
+  <h1 
+    className="text-black"
+    style={{
+      fontSize: '32px',
+      fontWeight: '700',
+      color: '#000000'
+    }}
+  >
+    {t('residencesList')}
+  </h1>
+</div>
 
               <div>
                 <div className="grid grid-cols-4 gap-5">
@@ -2892,10 +2880,10 @@ export default function ResidencePage({
                 <div className="flex items-center">
                   <button
                     onClick={handleCloseModal}
-                    className="mr-3 hover:bg-gray-200 rounded-lg transition-colors flex items-center justify-center"
+                    className="mr-3 bg-gray-200 border-white-400 hover:bg-white rounded-xl transition-colors flex items-center justify-center shadow-3xl"
                     style={{ 
-                      width: '20px', 
-                      height: '20px',
+                      width: '30px', 
+                      height: '30px',
                       color: '#374151'
                     }}
                   >
@@ -3090,49 +3078,6 @@ export default function ResidencePage({
                             </span>
                           </div>
                         </div>
-                      </div>
-                    </div>
-
-                    <div className="flex-1 pl-8 border-l border-gray-200 flex flex-col justify-between" style={{ borderLeftColor: '#E5E7EB' }}>
-                      <div>
-                        <h2 
-                          className="font-semibold text-black mb-3"
-                          style={{ 
-                            fontSize: '19px',
-                            fontWeight: '600',
-                            color: '#000000'
-                          }}
-                        >
-                          {t('ownerInfo')}
-                        </h2>
-                        
-                        <div className="flex items-center mb-2">
-                          <User size={14} className="text-gray-500 mr-2" style={{ color: '#6B7280' }} />
-                          <span 
-                            className="font-medium text-gray-700"
-                            style={{ 
-                              fontSize: '14px',
-                              color: '#374151'
-                            }}
-                          >
-                            {selectedResidence.nom_proprietaire || selectedResidence.proprietaire || t('notSpecified')}
-                          </span>
-                        </div>
-                        
-                        {selectedResidence.telephone && (
-                          <div className="flex items-center mb-2">
-                            <Phone size={14} className="text-gray-500 mr-2" style={{ color: '#6B7280' }} />
-                            <span 
-                              className="text-gray-700"
-                              style={{ 
-                                fontSize: '14px',
-                                color: '#374151'
-                              }}
-                            >
-                              {selectedResidence.telephone}
-                            </span>
-                          </div>
-                        )}
                       </div>
                     </div>
                   </div>
