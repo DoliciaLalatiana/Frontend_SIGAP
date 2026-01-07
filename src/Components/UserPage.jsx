@@ -216,17 +216,24 @@ const UserPage = ({ user, onLogout, userPageState, onUserPageStateChange }) => {
   };
 
   const handleLogout = () => {
+    // Appeler la fonction onLogout passée en props
     if (onLogout && typeof onLogout === 'function') {
       onLogout();
     } else {
+      // Fallback si onLogout n'est pas disponible
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-      window.location.href = '/login';
+      // Utiliser une redirection conditionnelle
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
+      }
     }
   };
 
   const handleGoBack = () => {
     console.log(t('back'));
+    // Vous pouvez ajouter la navigation vers la page précédente si nécessaire
+    // history.goBack() si vous utilisez react-router
   };
 
   // Composant Modal pour le mot de passe
