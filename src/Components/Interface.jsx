@@ -62,28 +62,6 @@ const ANDABOLY_CENTER = {
   lng: ANDABOLY_POLYGON.reduce((sum, point) => sum + point.lng, 0) / ANDABOLY_POLYGON.length
 };
 
-// Fonction utilitaire pour vérifier si un point est dans un polygon
-const isPointInPolygon = (point, polygon) => {
-  if (!point || !polygon || !Array.isArray(polygon) || polygon.length === 0) return false;
-
-  const x = Number(point.lng), y = Number(point.lat);
-  if (Number.isNaN(x) || Number.isNaN(y)) return false;
-
-  let inside = false;
-  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-    const xi = Number(polygon[i].lng), yi = Number(polygon[i].lat);
-    const xj = Number(polygon[j].lng), yj = Number(polygon[j].lat);
-    if ([xi, yi, xj, yj].some(v => Number.isNaN(v))) continue;
-
-    const intersect = ((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
-    if (intersect) inside = !inside;
-  }
-  return inside;
-};
-
-// Configuration de l'URL de base pour l'API (compatible Vite)
-const API_BASE = import.meta.env.VITE_API_BASE || '';
-
 // Fonction pour formater la date des notifications
 const formatNotificationDate = (dateString) => {
   const notificationDate = new Date(dateString);
@@ -114,6 +92,297 @@ const formatNotificationDate = (dateString) => {
   }
 };
 
+// Fonction utilitaire pour vérifier si un point est dans un polygon
+const isPointInPolygon = (point, polygon) => {
+  if (!point || !polygon || !Array.isArray(polygon) || polygon.length === 0) return false;
+
+  const x = Number(point.lng), y = Number(point.lat);
+  if (Number.isNaN(x) || Number.isNaN(y)) return false;
+
+  let inside = false;
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    const xi = Number(polygon[i].lng), yi = Number(polygon[i].lat);
+    const xj = Number(polygon[j].lng), yj = Number(polygon[j].lat);
+    if ([xi, yi, xj, yj].some(v => Number.isNaN(v))) continue;
+
+    const intersect = ((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+    if (intersect) inside = !inside;
+  }
+  return inside;
+};
+
+// Configuration de l'URL de base pour l'API (compatible Vite)
+const API_BASE = import.meta.env.VITE_API_BASE || '';
+
+// Fonction pour traduire les messages de notification mixtes
+const translateNotificationMessage = (message, t, i18n) => {
+  if (!message) return message;
+
+  // Dictionnaire complet de traduction français -> malagasy
+  const frToMg = {
+    // Mots français -> malagasy
+    "Résidence rejetée": "Trano fonenana nolavina",
+"Résidence approuvée": "Trano fonenana nekena",
+"Votre résidence": "Ny fonenanareo",
+"a été rejetée": "dia nolavina",
+"a été approuvée": "dia nekena",
+"Motif:": "Antony:",
+"notification + pour le": "fampandrenesana ho an'ny",
+"Résidence": "Trano fonenana",
+"Soumis par": "Nampidirin'i",
+"Agent M": "Agent M",
+"L'agent": "Ny agent",
+"a ajouté une nouvelle résidence": "nanampy trano fonenana vaovao",
+"qui nécessite votre approbation": "izay mila fanekenao",
+"nécessite votre approbation": "mila fanekenao",
+"approbation": "fanekena",
+"résidence": "trano fonenana",
+"approuvée": "nekena",
+"nouvelle": "vaovao",
+"ajouté": "nanampy",
+"Nouvelle résidence à approuver": "Trano fonenana vaovao mila ankatoavina",
+"Résidence à approuver pour": "Trano fonenana mila ankatoavina ho an'ny",
+"Adresse ajoutée par": "Adiresy nampidirin'i",
+"Approbation requise": "Ilaina ny fanekena",
+"Sans coordonnées": "Tsy misy kaordinà",
+"Non spécifié": "Tsy voafaritra",
+"rejetée": "nolavina",
+"rejetée.": "nolavina.",
+"rejetée:": "nolavina:",
+"notification": "fampandrenesana",
+"pour le": "ho an'ny",
+"Votre résidence": "Ny tranonareo",
+"a été": "dia",
+"Raison:": "Antony:",
+"notification pour le": "fampandrenesana ho an'ny",
+"Résidence": "Trano fonenana",
+"notification": "fampandrenesana",
+"Agent": "Agent",
+"Nouvelle": "Vaovao",
+"à approuver": "mila ankatoavina"
+
+  };
+
+  // Dictionnaire malagasy -> français
+  const mgToFr = {
+    // Mots malagasy -> français
+    "Trano fonenana nolavina": "Résidence rejetée",
+"Trano fonenana ekena": "Résidence approuvée",
+"Ny tranonareo": "Votre résidence",
+"dia nolavina": "a été rejetée",
+"dia ekena": "a été approuvée",
+"Antony:": "Motif:",
+"fampandrenesana ho an'ny": "notification pour le",
+"Trano fonenana": "Résidence",
+"Nampitondrain'i": "Soumis par",
+"Agent M": "Agent M",
+"Ny Mpandrindra": "L’agent",
+"nanampy trano fonenana vaovao": "a ajouté une nouvelle résidence",
+"izay mila fanekenao": "qui nécessite votre approbation",
+"mila fanekenao": "nécessite votre approbation",
+"fanekena": "approbation",
+"trano fonenana": "résidence",
+"ekena": "approuvée",
+"vaovao": "nouvelle",
+"nampiana": "ajouté",
+"Trano fonenana vaovao tokony hotapahina": "Nouvelle résidence à approuver",
+"Trano fonenana tokony hotapahina ho an'ny": "Résidence à approuver pour",
+"Adiresy nampianin'i": "Adresse ajoutée par",
+"Ilaina ny fanekena": "Approbation requise",
+"Tsy misy teboka": "Sans coordonnées",
+"Tsy voafaritra": "Non spécifié",
+"nolavina": "rejetée",
+"nolavina.": "rejetée.",
+"nolavina:": "rejetée:",
+"fampandrenesana": "notification",
+"ho an'ny": "pour le",
+"dia": "a été",
+"fampandrenesana": "notification",
+"ho an'ny": "pour le",
+"Fonenana": "Résidence",
+"Mpiasam-panjakana": "Agent",
+"zaovao": "Nouveau",
+"tokony ankatoavina": "à approuver"
+
+  };
+
+  let translated = message;
+
+  // Détecter la direction de traduction
+  const isFrenchToMalagasy = i18n.language === "mg";
+
+  if (isFrenchToMalagasy) {
+    console.log("[TRAD] Traduction français -> malagasy");
+    console.log("[TRAD] Message original:", message);
+
+    // Traduire français -> malagasy COMPLÈTEMENT
+    Object.entries(frToMg).forEach(([fr, mg]) => {
+      if (translated.includes(fr)) {
+        translated = translated.replace(new RegExp(fr, "g"), mg);
+      }
+    });
+
+    // CORRECTIONS SPÉCIFIQUES POUR LES ERREURS COMMUNES
+    // 1. Correction de "Vaovao! trano fonenana tokony hotapahina"
+    translated = translated.replace(
+      /Nouvelle résidence à approuver/g,
+      "Trano fonenana vaovao tokony ankatoavina"
+    );
+    translated = translated.replace(
+      /Nouvelle résidence à approuver/g,
+      "Trano fonenana vaovao tokony ankatoavina"
+    );
+    
+    // 2. Correction de "Nouvelle trano fonenana tokony hotapahina"
+    translated = translated.replace(
+      /Nouvelle résidence à approuver/g,
+      "Trano fonenana vaovao tokony ankatoavina"
+    );
+    
+    // 3. Correction de "Nouvelle résidence à approuver" (au cas où)
+    translated = translated.replace(
+      /Nouvelle résidence à approuver/g,
+      "Trano fonenana vaovao tokony ankatoavina"
+    );
+
+    // Gérer les patterns spécifiques avec variables
+    // Pattern: "Résidence rejetée\n\nVotre résidence a été rejetée. Motif: fampandrenesana ho an'ny Trano fonenana \"12345\" - Nampitondrain'i: Agent M"
+    const rejectionPattern =
+      /Résidence rejetée\s*\n\s*Votre résidence a été rejetée\. Motif: fampandrenesana ho an'ny Trano fonenana "([^"]+)" - Nampitondrain'i: (.+)/g;
+    if (rejectionPattern.test(message)) {
+      const residenceNumber = message.match(/Trano fonenana "([^"]+)"/)?.[1];
+      const agentName = message.match(/Nampitondrain'i: (.+)/)?.[1];
+      if (residenceNumber && agentName) {
+        translated = `${t('residenceRejected')}\n\n${t('yourResidence')} ${t('hasBeenRejected')}. ${t('reason')} fampandrenesana ho an'ny Trano fonenana "${residenceNumber}" - ${t('submittedBy')}: ${agentName}`;
+      }
+    }
+
+    // Pattern: "Trano fonenana nolavina\n\nVotre résidence a été rejetée. Motif: fampandrenesana ho an'ny Trano fonenana \"12345\" - Nampitondrain'i: Agent M"
+    const mixedRejectionPattern =
+      /Trano fonenana nolavina\s*\n\s*Votre résidence a été rejetée\. Motif: fampandrenesana ho an'ny Trano fonenana "([^"]+)" - Nampitondrain'i: (.+)/g;
+    if (mixedRejectionPattern.test(message)) {
+      const residenceNumber = message.match(/Trano fonenana "([^"]+)"/)?.[1];
+      const agentName = message.match(/Nampitondrain'i: (.+)/)?.[1];
+      if (residenceNumber && agentName) {
+        translated = `${t('residenceRejected')}\n\n${t('yourResidence')} ${t('hasBeenRejected')}. ${t('reason')} fampandrenesana ho an'ny Trano fonenana "${residenceNumber}" - ${t('submittedBy')}: ${agentName}`;
+      }
+    }
+
+    // Pattern: "Résidence rejetée\n\nNy tranonareo dia nolavina. Antony: fampandrenesana ho an'ny Trano fonenana \"12345\" - Nampitondrain'i: Agent M"
+    const mixedPattern2 =
+      /Résidence rejetée\s*\n\s*Ny tranonareo dia nolavina\. Antony: fampandrenesana ho an'ny Trano fonenana "([^"]+)" - Nampitondrain'i: (.+)/g;
+    if (mixedPattern2.test(message)) {
+      const residenceNumber = message.match(/Trano fonenana "([^"]+)"/)?.[1];
+      const agentName = message.match(/Nampitondrain'i: (.+)/)?.[1];
+      if (residenceNumber && agentName) {
+        translated = `${t('residenceRejected')}\n\n${t('yourResidence')} ${t('hasBeenRejected')}. ${t('reason')} fampandrenesana ho an'ny Trano fonenana "${residenceNumber}" - ${t('submittedBy')}: ${agentName}`;
+      }
+    }
+
+    // S'assurer que tous les mots français sont traduits
+    // Remplacer les mots français restants
+    translated = translated
+      .replace(/Résidence/g, t('trano fonenana'))
+      .replace(/rejetée/g, "nolavina")
+      .replace(/Votre résidence/g, t('yourResidence'))
+      .replace(/a été/g, "dia")
+      .replace(/Motif:/g, t('antony'))
+      .replace(/notification pour le/g, "fampandrenesana ho an'ny")
+      .replace(/Soumis par:/g, t('nampidirin ny') + ":")
+      .replace(/Soumis par/g, t('nampidirin ny'))
+      .replace(/notification/g, t('fampandrenesana'))
+      .replace(/pour le/g, "ho an'ny")
+      .replace(/Résidence/g, t('trano fonenana'))
+      .replace(/Agent/g, "Mpandrindra")
+      .replace(/à approuver/g, "tokony ankatoavina")
+      .replace(/Nouvelle résidence/g, "Trano fonenana vaovao");
+
+    console.log("[TRAD] Message traduit:", translated);
+  } else {
+    console.log("[TRAD] Traduction malagasy -> français");
+    console.log("[TRAD] Message original:", message);
+
+    // Traduire malagasy -> français COMPLÈTEMENT
+    Object.entries(mgToFr).forEach(([mg, fr]) => {
+      if (translated.includes(mg)) {
+        translated = translated.replace(new RegExp(mg, "g"), fr);
+      }
+    });
+
+    // CORRECTIONS SPÉCIFIQUES POUR LES ERREURS COMMUNES
+    // 1. Correction de "Vaovao! trano fonenana tokony hotapahina"
+    translated = translated.replace(
+      /Trano fonenana vaovao tokony ankatoavina/g,
+      t('newResidenceToApprove')
+    );
+    translated = translated.replace(
+      /Trano fonenana vaovao tokony ankatoavina/g,
+      t('newResidenceToApprove')
+    );
+    
+    // 2. Correction de "Trano fonenana vaovao" (forme incomplète)
+    translated = translated.replace(
+      /Trano fonenana vaovao/g,
+      "Nouvelle résidence"
+    );
+
+    // Gérer les patterns spécifiques avec variables
+    // Pattern: "Trano fonenana nolavina\n\nNy tranonareo dia nolavina. Antony: fampandrenesana ho an'ny Trano fonenana \"12345\" - Nampitondrain'i: Agent M"
+    const rejectionPatternMg =
+      /Trano fonenana nolavina\s*\n\s*Ny tranonareo dia nolavina\. Antony: fampandrenesana ho an'ny Trano fonenana "([^"]+)" - Nampitondrain'i: (.+)/g;
+    if (rejectionPatternMg.test(message)) {
+      const residenceNumber = message.match(/Trano fonenana "([^"]+)"/)?.[1];
+      const agentName = message.match(/Nampitondrain'i: (.+)/)?.[1];
+      if (residenceNumber && agentName) {
+        translated = `${t('residenceRejected')}\n\n${t('yourResidence')} ${t('hasBeenRejected')}. ${t('reason')}: ${t('notification')} pour le ${t('residence')} "${residenceNumber}" - ${t('submittedBy')}: ${agentName}`;
+      }
+    }
+
+    // Pattern: "Résidence rejetée\n\nNy tranonareo dia nolavina. Antony: fampandrenesana ho an'ny Trano fonenana \"12345\" - Nampitondrain'i: Agent M"
+    const mixedPatternFr =
+      /Résidence rejetée\s*\n\s*Ny tranonareo dia nolavina\. Antony: fampandrenesana ho an'ny Trano fonenana "([^"]+)" - Nampitondrain'i: (.+)/g;
+    if (mixedPatternFr.test(message)) {
+      const residenceNumber = message.match(/Trano fonenana "([^"]+)"/)?.[1];
+      const agentName = message.match(/Nampitondrain'i: (.+)/)?.[1];
+      if (residenceNumber && agentName) {
+        translated = `${t('residenceRejected')}\n\n${t('yourResidence')} ${t('hasBeenRejected')}. ${t('reason')}: ${t('notification')} pour le ${t('residence')} "${residenceNumber}" - ${t('submittedBy')}: ${agentName}`;
+      }
+    }
+
+    // Pattern: "Trano fonenana nolavina\n\nVotre résidence a été rejetée. Motif: fampandrenesana ho an'ny Trano fonenana \"12345\" - Nampitondrain'i: Agent M"
+    const mixedPatternFr2 =
+      /Trano fonenana nolavina\s*\n\s*Votre résidence a été rejetée\. Motif: fampandrenesana ho an'ny Trano fonenana "([^"]+)" - Nampitondrain'i: (.+)/g;
+    if (mixedPatternFr2.test(message)) {
+      const residenceNumber = message.match(/Trano fonenana "([^"]+)"/)?.[1];
+      const agentName = message.match(/Nampitondrain'i: (.+)/)?.[1];
+      if (residenceNumber && agentName) {
+        translated = `${t('residenceRejected')}\n\n${t('yourResidence')} ${t('hasBeenRejected')}. ${t('reason')}: ${t('notification')} pour le ${t('residence')} "${residenceNumber}" - ${t('submittedBy')}: ${agentName}`;
+      }
+    }
+
+    // S'assurer que tous les mots malagasy sont traduits
+    // Remplacer les mots malagasy restants
+    translated = translated
+      .replace(/Trano fonenana/g, t('residence'))
+      .replace(/nolavina/g, "rejetée")
+      .replace(/Ny tranonareo/g, t('yourResidence'))
+      .replace(/dia/g, "a été")
+      .replace(/Antony:/g, t('reason') + ":")
+      .replace(/fampandrenesana ho an\'ny/g, `${t('notification')} pour le`)
+      .replace(/Nampitondrain\'i:/g, t('submittedBy') + ":")
+      .replace(/Nampitondrain\'i/g, t('submittedBy'))
+      .replace(/fampandrenesana/g, t('notification'))
+      .replace(/ho an\'ny/g, "pour le")
+      .replace(/Trano fonenana/g, t('residence'))
+      .replace(/Mpiasam-panjakana/g, t('agent'))
+      .replace(/tokony ankatoavina/g, "à approuver");
+
+    console.log("[TRAD] Message traduit:", translated);
+  }
+
+  return translated;
+};
+
 // Fonction utilitaire pour gérer les réponses API
 const handleApiResponse = async (response) => {
   if (response.status === 401) {
@@ -141,10 +410,14 @@ export default function Interface({ user }) {
   const { t, i18n } = useTranslation();
   const [openDropdown, setOpenDropdown] = useState(false);
   const [menuDropdownOpen, setMenuDropdownOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
+  
+  // ÉTATS DE RECHERCHE SÉPARÉS
+  const [interfaceSearchQuery, setInterfaceSearchQuery] = useState(""); // Pour la recherche dans l'interface/carte
+  const [residenceSearchQuery, setResidenceSearchQuery] = useState(""); // Pour la recherche dans la page résidence
   const [searchResults, setSearchResults] = useState([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [showSearchResults, setShowSearchResults] = useState(false);
+  
   const [showStatistique, setShowStatistique] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [currentUser, setCurrentUser] = useState(user);
@@ -199,6 +472,15 @@ export default function Interface({ user }) {
   const addAddressRef = useRef(null);
   const menuDropdownRef = useRef(null);
   const residentFieldsRef = useRef(null);
+  const searchResultsModalRef = useRef(null); // NOUVELLE REF POUR LE MODAL DES RÉSULTATS
+
+  // Références pour les champs des résidents (nouveau du deuxième code)
+  const residentInputRefs = useRef([]);
+
+  // Fonction pour traduire les messages de notification (nouveau du deuxième code)
+  const translateMessage = (message) => {
+    return translateNotificationMessage(message, t, i18n);
+  };
 
   const createCustomMarkerIcon = (color) => {
     let svg = '';
@@ -366,9 +648,8 @@ export default function Interface({ user }) {
   const handleNotificationClick = async (notification) => {
     console.log('=== CLIC SUR NOTIFICATION ===');
     console.log('Notification complète:', notification);
-    console.log('Métadonnées:', notification.metadata);
-    console.log('Message:', notification.message);
-    console.log('Type:', notification.type);
+    console.log('Message original:', notification.message);
+    console.log('Message traduit:', translateMessage(notification.message));
 
     await markAsRead(notification.id);
 
@@ -433,14 +714,15 @@ export default function Interface({ user }) {
     }
   };
 
-  const performSearch = async (query) => {
+  const performSearch = async (query, isResidenceSearch = false) => {
     if (query.trim() === '') {
       setSearchResults([]);
       setShowSearchResults(false);
       return;
     }
 
-    if (showResidence) {
+    // Si c'est une recherche dans la page résidence, ne pas afficher les résultats dans l'interface
+    if (isResidenceSearch && showResidence) {
       setShowSearchResults(false);
       setSearchResults([]);
       return;
@@ -456,6 +738,8 @@ export default function Interface({ user }) {
         return;
       }
 
+      console.log('[SEARCH] Performing search for:', query, 'isResidenceSearch:', isResidenceSearch);
+      
       const response = await fetch(`${API_BASE}/api/search?q=${encodeURIComponent(query)}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -465,197 +749,181 @@ export default function Interface({ user }) {
 
       if (response.ok) {
         const data = await response.json();
+        console.log('[SEARCH] Search results received:', data);
         setSearchResults(data);
-        setShowSearchResults(true);
-
-        if (showResidence) {
-          console.log("Recherche dans les résidences:", data);
+        
+        // Afficher les résultats seulement si c'est une recherche d'interface (pas de résidence)
+        if (!isResidenceSearch && !showResidence) {
+          setShowSearchResults(true);
+        } else {
           setShowSearchResults(false);
-        } else if (!isAnyPageOpen) {
-          console.log("Résultats de recherche sur carte:", data);
         }
       } else if (response.status === 401) {
         console.error('[SEARCH] Token invalid');
         setSearchResults([]);
       }
     } catch (error) {
-      console.error('Erreur lors de la recherche:', error);
+      console.error('[SEARCH] Erreur lors de la recherche:', error);
       setSearchResults([]);
     } finally {
       setSearchLoading(false);
     }
   };
 
-  const handleSearchSubmit = (e) => {
+  const handleInterfaceSearchSubmit = (e) => {
     e.preventDefault();
 
-    if (searchQuery.trim() === '') {
+    if (interfaceSearchQuery.trim() === '') {
       setShowSearchResults(false);
       return;
     }
 
-    if (showResidence) {
-      setShowSearchResults(false);
-      console.log("Recherche dans les résidences:", searchQuery);
-      return;
-    }
-
-    performSearch(searchQuery);
-
-    if (showResidence) {
-      console.log("Recherche dans les résidences:", searchQuery);
-    } else if (showStatistique || showUserPage || showPendingResidences) {
-      return;
-    } else {
-      console.log("Recherche sur la carte:", searchQuery);
-    }
+    // Recherche dans l'interface (carte)
+    performSearch(interfaceSearchQuery, false);
   };
 
-  const handleSearchResultClick = (result) => {
-    console.log('=== CLIC SUR RÉSULTAT DE RECHERCHE ===', result);
+  const handleResidenceSearchSubmit = (e) => {
+    e.preventDefault();
 
+    if (residenceSearchQuery.trim() === '') {
+      return;
+    }
+
+    // Recherche dans la page résidence
+    console.log("Recherche dans les résidences:", residenceSearchQuery);
+    // La recherche dans les résidences est gérée par le composant ResidencePage
+  };
+
+  // NOUVELLE FONCTION MODIFIÉE : CENTRER LA CARTE SUR UNE POSITION EN CONSERVANT LE ZOOM ACTUEL
+  const centerMapToPosition = (lat, lng) => {
+    if (!map) {
+      console.warn('[MAP] Carte non disponible pour centrage');
+      return;
+    }
+
+    console.log('[MAP] Centrage sur position avec zoom actuel:', { lat, lng });
+
+    // Récupérer le niveau de zoom ACTUEL
+    const currentZoom = map.getZoom();
+    
+    // Centrer la carte sur la nouvelle position avec le ZOOM ACTUEL
+    // Utiliser setCenter pour garder exactement le même zoom
+    map.setCenter({ lat: parseFloat(lat), lng: parseFloat(lng) });
+    
+    // S'assurer que le zoom reste exactement le même (déjà le cas avec setCenter)
+    console.log('[MAP] Zoom conservé:', currentZoom);
+
+    // Animer le déplacement avec panTo pour une transition plus fluide
+    map.panTo({ lat: parseFloat(lat), lng: parseFloat(lng) });
+  };
+
+  const handleViewOnMapFromResidence = (residence) => {
+    console.log('[INTERFACE] Affichage résidence sur carte:', residence);
+  
+    // Fermer les pages
+    setShowResidence(false);
+    setResidenceDetailMode(false);
+    setShowStatistique(false);
+    setShowUserPage(false);
+    setShowPendingResidences(false);
+    setUserPageState({ showPasswordModal: false });
+    setMenuDropdownOpen(false);
     setShowSearchResults(false);
-    setSearchQuery("");
-
-    if (result.type === 'residence') {
-      handleResidenceSearchResult(result);
-    } else if (result.type === 'person') {
-      handlePersonSearchResult(result);
-    }
-  };
-
-  const handleResidenceSearchResult = (result) => {
-    if (result.lat && result.lng) {
-      const lat = parseFloat(result.lat);
-      const lng = parseFloat(result.lng);
-
+  
+    const lat = residence.latitude || residence.lat;
+    const lng = residence.longitude || residence.lng;
+  
+    if (lat && lng) {
+      console.log('[INTERFACE] Centrage sur:', { lat: parseFloat(lat), lng: parseFloat(lng) });
+  
       if (map) {
-        setPreviousZoom(map.getZoom());
-        setPreviousCenter(map.getCenter());
+        // JUSTE panTo - garde automatiquement le même zoom
+        map.panTo({ lat: parseFloat(lat), lng: parseFloat(lng) });
       }
-
-      if (map) {
-        map.panTo({ lat, lng });
-        map.setZoom(18);
+  
+      setClickedResidenceId(residence.id);
+      setSelectedResidenceFromSearch(residence);
+  
+      if (!residences.some(r => r.id === residence.id)) {
+        setResidences(prev => [residence, ...prev]);
       }
-
-      setClickedResidenceId(result.id);
-      setSelectedResidenceFromSearch(result);
-
-      if (!residences.some(r => r.id === result.id)) {
-        setResidences(prev => [result, ...prev]);
-      }
-
-      setShowResidence(false);
-      setShowStatistique(false);
-      setShowUserPage(false);
-      setShowPendingResidences(false);
-      setUserPageState({ showPasswordModal: false });
-      
-      setMenuDropdownOpen(false);
-
     } else {
       alert(t('noCoordinates'));
     }
-
-    if (showResidence) {
-      console.log("Résidence sélectionnée:", result);
-      setShowResidence(false);
-    }
   };
 
-  const handleViewOnMapFromSearch = (result) => {
-    console.log('[INTERFACE] Affichage résidence sur carte depuis recherche:', result);
+  // FONCTION POUR AFFICHER UNE PERSONNE SUR LA CARTE
+  const handleViewOnMapFromPerson = (person) => {
+    console.log('[INTERFACE] Affichage personne sur carte:', person);
 
+    // Fermer toutes les pages ouvertes pour afficher la carte
+    setShowResidence(false);
+    setResidenceDetailMode(false);
+    setShowStatistique(false);
+    setShowUserPage(false);
+    setShowPendingResidences(false);
+    setUserPageState({ showPasswordModal: false });
+    
+    // Fermer les menus
+    setMenuDropdownOpen(false);
     setShowSearchResults(false);
-    setSearchQuery("");
 
-    if (map) {
-      setPreviousZoom(map.getZoom());
-      setPreviousCenter(map.getCenter());
-    }
-
-    if (result.type === 'residence') {
-      if (result.lat && result.lng) {
-        const lat = parseFloat(result.lat);
-        const lng = parseFloat(result.lng);
-
-        console.log('[INTERFACE] Centrage sur:', { lat, lng });
-
-        map.panTo({ lat: lat, lng: lng });
-        map.setZoom(18);
-
-        setClickedResidenceId(result.id);
-        setSelectedResidenceFromSearch(result);
-
-        if (!residences.some(r => r.id === result.id)) {
-          setResidences(prev => [result, ...prev]);
-        }
-
-        setShowResidence(false);
-        setShowStatistique(false);
-        setShowUserPage(false);
-        setShowPendingResidences(false);
-        setUserPageState({ showPasswordModal: false });
-        
-        setMenuDropdownOpen(false);
-        
-      } else {
-        alert(t('noCoordinates'));
-      }
-    } else if (result.type === 'person') {
-      if (result.residences && result.residences.length > 0) {
-        const residenceWithCoords = result.residences.find(r => r.lat && r.lng);
-
-        if (residenceWithCoords) {
-          const lat = parseFloat(residenceWithCoords.lat);
-          const lng = parseFloat(residenceWithCoords.lng);
-
-          console.log('[INTERFACE] Centrage sur résidence de la personne:', { lat, lng });
-
-          map.panTo({ lat, lng });
-          map.setZoom(18);
-
-          setClickedResidenceId(residenceWithCoords.id);
-          setSelectedResidenceFromSearch(residenceWithCoords);
-
-          if (!residences.some(r => r.id === residenceWithCoords.id)) {
-            setResidences(prev => [residenceWithCoords, ...prev]);
-          }
-
-          setShowResidence(false);
-          setShowStatistique(false);
-          setShowUserPage(false);
-          setShowPendingResidences(false);
-          setUserPageState({ showPasswordModal: false });
-          
-          setMenuDropdownOpen(false);
-        } else {
-          alert(t('personNoCoordinates'));
-        }
+    // Vérifier si la personne a des résidences
+    if (person.residences && person.residences.length > 0) {
+      // Prendre la première résidence (comme dans ResidencePage)
+      const residence = person.residences[0];
+      
+      if (residence) {
+        // Utiliser la même fonction que pour les résidences
+        handleViewOnMapFromResidence(residence);
       } else {
         alert(t('personNoAddress'));
       }
+    } else {
+      alert(t('personNoAddress'));
     }
   };
 
-  const handlePersonSearchResult = (result) => {
-    console.log("Personne sélectionnée:", result);
+  // FONCTION PRINCIPALE POUR LA RECHERCHE (clic sur un résultat)
+  const handleSearchResultClick = (result) => {
+    console.log('=== CLIC SUR RÉSULTAT DE RECHERCHE ===', result);
+    console.log('[LOG] Clic sur le résultat complet (nom/lot/adresse)');
 
-    if (result.residences && result.residences.length > 0) {
-      const residenceWithCoords = result.residences.find(r => r.lat && r.lng);
+    setShowSearchResults(false);
+    setInterfaceSearchQuery("");
 
-      if (residenceWithCoords) {
-        handleResidenceSearchResult(residenceWithCoords);
-      } else {
-        alert(`${t('person')}: ${result.nom} ${result.prenom}\n${t('personNoCoordinates')}`);
-      }
-    } else {
-      alert(`${t('person')}: ${result.nom} ${result.prenom}\n${t('personNoAddress')}`);
+    if (result.type === 'residence') {
+      // Utiliser EXACTEMENT la même logique que dans ResidencePage
+      handleViewOnMapFromResidence(result);
+    } else if (result.type === 'person') {
+      // Pour une personne, trouver sa résidence
+      handleViewOnMapFromPerson(result);
     }
+  };
+
+  // FONCTION POUR LE BOUTON "Voir sur la carte" DANS LES RÉSULTATS
+  const handleViewOnMapFromSearch = (result) => {
+    console.log('[INTERFACE] Affichage sur carte depuis bouton "Voir sur la carte":', result);
+    console.log('[LOG] Clic spécifique sur le bouton "Voir sur la carte"');
+
+    setShowSearchResults(false);
+    setInterfaceSearchQuery("");
+
+    if (result.type === 'residence') {
+      handleViewOnMapFromResidence(result);
+    } else if (result.type === 'person') {
+      handleViewOnMapFromPerson(result);
+    }
+  };
+
+  // FONCTION POUR ResidencePage.jsx (gardée pour compatibilité)
+  const handleViewOnMap = (residence) => {
+    // Cette fonction est appelée par ResidencePage, donc on garde la même logique
+    handleViewOnMapFromResidence(residence);
   };
 
   const SearchResultsModal = () => {
+    // Ne montrer le modal que pour les recherches d'interface
     if (showResidence || !showSearchResults || searchResults.length === 0) return null;
 
     const searchBar = document.querySelector('.search-bar-container');
@@ -670,6 +938,7 @@ export default function Interface({ user }) {
 
     return (
       <div 
+        ref={searchResultsModalRef}
         className="fixed z-50 bg-white rounded-2xl shadow-2xl border border-gray-200 max-h-96 overflow-y-auto"
         style={{
           top: `${topPosition}px`,
@@ -682,7 +951,10 @@ export default function Interface({ user }) {
           <div className="flex justify-between items-center">
             <h3 className="font-semibold text-gray-800">{t('searchResults')}</h3>
             <button
-              onClick={() => setShowSearchResults(false)}
+              onClick={() => {
+                console.log('[LOG] Clic sur bouton X pour fermer les résultats');
+                setShowSearchResults(false);
+              }}
               className="text-gray-400 hover:text-gray-600"
             >
               <X size={20} />
@@ -697,34 +969,57 @@ export default function Interface({ user }) {
           {searchResults.map((result, index) => (
             <div
               key={index}
-              className="p-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-all duration-200"
-              onClick={() => handleSearchResultClick(result)}
+              className="p-3 border-b border-gray-100 hover:bg-gray-50 transition-all duration-200"
             >
               <div className="flex justify-between items-start">
-                <div className="flex-1">
+                <div 
+                  className="flex-1"
+                  onClick={(e) => {
+                    // Vérifier si le clic vient du bouton ou de la zone de contenu
+                    const target = e.target;
+                    const isButtonClick = target.closest('button') || 
+                                          target.closest('[data-view-on-map]');
+                    
+                    if (!isButtonClick) {
+                      console.log('[LOG] Clic sur la zone de contenu (nom/lot/adresse) du résultat');
+                      console.log('Résultat cliqué:', result);
+                      handleSearchResultClick(result);
+                    } else {
+                      console.log('[LOG] Clic intercepté - provient du bouton, action annulée');
+                    }
+                  }}
+                >
                   {result.type === 'residence' && (
                     <div>
                       <div className="flex items-center mb-2">
                         <MapPin size={16} className="text-blue-500 mr-2 flex-shrink-0" />
-                        <h4 className="font-medium text-sm text-gray-800">
-                          {result.lot || 'Lot non spécifié'}
-                        </h4>
+                        <div className="cursor-pointer hover:text-blue-600">
+                          <h4 className="font-medium text-sm text-gray-800">
+                            {result.lot || t('lotNotSpecified')}
+                          </h4>
+                        </div>
                         <span className="ml-2 text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded-full flex-shrink-0">
                           {t('address')}
                         </span>
+                        {/* Indicateur si pas de coordonnées */}
+                        {!(result.lat || result.latitude) && !(result.lng || result.longitude) && (
+                          <span className="ml-2 text-xs px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full flex-shrink-0">
+                            {t('noCoordinatesShort')}
+                          </span>
+                        )}
                       </div>
                       {result.quartier && (
-                        <p className="text-xs text-gray-600 mb-1">
+                        <p className="text-xs text-gray-600 mb-1 cursor-pointer hover:text-blue-600">
                           <span className="font-medium">{t('neighborhood')}:</span> {result.quartier}
                         </p>
                       )}
                       {result.ville && (
-                        <p className="text-xs text-gray-600">
+                        <p className="text-xs text-gray-600 cursor-pointer hover:text-blue-600">
                           <span className="font-medium">{t('city')}:</span> {result.ville}
                         </p>
                       )}
                       {result.proprietaires && result.proprietaires.length > 0 && (
-                        <p className="text-xs text-gray-600 mt-1">
+                        <p className="text-xs text-gray-600 mt-1 cursor-pointer hover:text-blue-600">
                           <span className="font-medium">{t('owner')}:</span> {result.proprietaires.map(p => p.nom).join(', ')}
                         </p>
                       )}
@@ -735,9 +1030,11 @@ export default function Interface({ user }) {
                     <div>
                       <div className="flex items-center mb-2">
                         <User size={16} className="text-green-500 mr-2 flex-shrink-0" />
-                        <h4 className="font-medium text-sm text-gray-800">
-                          {result.nom} {result.prenom}
-                        </h4>
+                        <div className="cursor-pointer hover:text-green-600">
+                          <h4 className="font-medium text-sm text-gray-800">
+                            {result.nom} {result.prenom}
+                          </h4>
+                        </div>
                         <span className="ml-2 text-xs px-2 py-1 bg-green-100 text-green-800 rounded-full flex-shrink-0">
                           {t('person')}
                         </span>
@@ -746,8 +1043,8 @@ export default function Interface({ user }) {
                         <div className="mt-2">
                           <p className="text-xs text-gray-500 font-medium mb-1">{t('addresses')}:</p>
                           {result.residences.slice(0, 2).map((residence, idx) => (
-                            <p key={idx} className="text-xs text-gray-600">
-                              • {residence.lot || 'Lot non spécifié'} - {residence.quartier}
+                            <p key={idx} className="text-xs text-gray-600 cursor-pointer hover:text-green-600">
+                              • {residence.lot || t('lotNotSpecified')} - {residence.quartier}
                             </p>
                           ))}
                           {result.residences.length > 2 && (
@@ -762,12 +1059,15 @@ export default function Interface({ user }) {
                 </div>
                 
                 <button
+                  data-view-on-map="true"
                   onClick={(e) => {
                     e.stopPropagation();
+                    console.log('[LOG] Clic direct sur le bouton "Voir sur la carte"');
                     handleViewOnMapFromSearch(result);
                   }}
                   className="ml-2 flex items-center text-xs px-3 py-1.5 bg-white text-gray-800 border border-gray-800 rounded-lg hover:bg-gray-50 transition-colors"
                   title={t('viewOnMap')}
+                  disabled={result.type === 'residence' && !(result.lat || result.latitude) && !(result.lng || result.longitude)}
                 >
                   <Map size={14} className="mr-1" />
                   {t('viewOnMap')}
@@ -862,15 +1162,11 @@ export default function Interface({ user }) {
     }
   }, [showPendingResidences]);
 
+  // USE EFFECT POUR LA RECHERCHE D'INTERFACE
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
-      if (searchQuery.trim() !== '') {
-        if (showResidence) {
-          setShowSearchResults(false);
-          setSearchResults([]);
-        } else {
-          performSearch(searchQuery);
-        }
+      if (interfaceSearchQuery.trim() !== '' && !showResidence) {
+        performSearch(interfaceSearchQuery, false);
       } else {
         setShowSearchResults(false);
         setSearchResults([]);
@@ -878,7 +1174,16 @@ export default function Interface({ user }) {
     }, 300);
 
     return () => clearTimeout(delayDebounceFn);
-  }, [searchQuery, showResidence]);
+  }, [interfaceSearchQuery, showResidence]);
+
+  // USE EFFECT POUR NETTOYER LA RECHERCHE D'INTERFACE QUAND ON ENTRE DANS LA PAGE RÉSIDENCE
+  useEffect(() => {
+    if (showResidence) {
+      // Quand on entre dans la page résidence, on nettoie la recherche d'interface
+      setShowSearchResults(false);
+      setInterfaceSearchQuery("");
+    }
+  }, [showResidence]);
 
   const handlePolygonMouseOver = (e) => {
     try {
@@ -1038,14 +1343,29 @@ export default function Interface({ user }) {
 
   useEffect(() => {
     const handleClickOutside = (event) => {
+      // Pour le dropdown utilisateur
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setOpenDropdown(false);
       }
 
-      if (!searchRef.current?.contains(event.target) && showSearchResults) {
-        setShowSearchResults(false);
+      // POUR LES RÉSULTATS DE RECHERCHE - CORRECTION ICI
+      if (showSearchResults) {
+        // Vérifier si le clic est dans la barre de recherche
+        const isClickInsideSearchBar = searchRef.current?.contains(event.target);
+        
+        // Vérifier si le clic est dans le modal des résultats
+        const isClickInsideResultsModal = searchResultsModalRef.current?.contains(event.target);
+        
+        // Si le clic n'est ni dans la barre ni dans le modal
+        if (!isClickInsideSearchBar && !isClickInsideResultsModal) {
+          console.log('[LOG] Clic vraiment en dehors, fermeture des résultats');
+          setShowSearchResults(false);
+        } else {
+          console.log('[LOG] Clic dans la barre ou le modal, on ne ferme pas');
+        }
       }
 
+      // Pour le menu dropdown
       const menuButton = document.querySelector('[data-menu-button]');
       const menuDropdown = menuDropdownRef.current;
       
@@ -1108,11 +1428,12 @@ export default function Interface({ user }) {
 
   const isSearchDisabled = showStatistique || showUserPage || showPendingResidences;
 
+
   const handleLogout = () => {
     localStorage.removeItem('interfaceState');
     localStorage.removeItem("token");
     localStorage.removeItem("user");
-    window.location.href = "/login";
+    window.location.href = "/";
   };
 
   const handleLogoClick = () => {
@@ -1139,7 +1460,7 @@ export default function Interface({ user }) {
       
       setMenuDropdownOpen(false);
       
-      setSearchQuery("");
+      setInterfaceSearchQuery("");
       setSearchResults([]);
       setShowSearchResults(false);
       return;
@@ -1158,7 +1479,7 @@ export default function Interface({ user }) {
       
       setMenuDropdownOpen(false);
       
-      setSearchQuery("");
+      setInterfaceSearchQuery("");
       setSearchResults([]);
       setShowSearchResults(false);
       return;
@@ -1170,7 +1491,7 @@ export default function Interface({ user }) {
       
       setMenuDropdownOpen(false);
       
-      setSearchQuery("");
+      setInterfaceSearchQuery("");
       setSearchResults([]);
       setShowSearchResults(false);
       return;
@@ -1183,7 +1504,7 @@ export default function Interface({ user }) {
       
       setMenuDropdownOpen(false);
       
-      setSearchQuery("");
+      setInterfaceSearchQuery("");
       setSearchResults([]);
       setShowSearchResults(false);
       return;
@@ -1218,7 +1539,7 @@ export default function Interface({ user }) {
         break;
     }
     
-    setSearchQuery("");
+    setInterfaceSearchQuery("");
     setSearchResults([]);
     setShowSearchResults(false);
   };
@@ -1348,6 +1669,7 @@ export default function Interface({ user }) {
   const handleAddAddressClick = () => {
     if (isAnyPageOpen || isSelectingLocation || isAddAddressModalOpen || showAddAddress) return;
 
+    console.log('[LOG] Clic sur bouton "Ajouter une adresse"');
     setIsAddAddressModalOpen(true);
     setSelectedMarkerColor("yellow");
 
@@ -1550,6 +1872,7 @@ export default function Interface({ user }) {
   };
 
   const handleReturnToSelection = () => {
+    console.log('[LOG] Clic sur bouton "Retour à la sélection"');
     setShowAddAddress(false);
     setIsSelectingLocation(true);
     setSelectedAddress("");
@@ -1567,6 +1890,7 @@ export default function Interface({ user }) {
   };
 
   const handleCloseComplete = () => {
+    console.log('[LOG] Fermeture complète de la modal d\'ajout d\'adresse');
     setShowAddAddress(false);
     setIsSelectingLocation(false);
     setSelectedAddress("");
@@ -1583,25 +1907,84 @@ export default function Interface({ user }) {
     setSelectedMarkerColor("yellow");
   };
 
+  // CORRECTION DE LA FONCTION DE CALCUL D'ÂGE (du deuxième code)
   const calculateAgeFromDate = (dateStr) => {
     if (!dateStr) return null;
-    const d = new Date(dateStr);
-    if (Number.isNaN(d.getTime())) return null;
-    const diff = Date.now() - d.getTime();
-    const ageDt = new Date(diff);
-    return Math.abs(ageDt.getUTCFullYear() - 1970);
+
+    try {
+      const birthDate = new Date(dateStr);
+
+      // Vérifier que la date est valide
+      if (isNaN(birthDate.getTime())) {
+        console.warn("Date de naissance invalide:", dateStr);
+        return null;
+      }
+
+      const today = new Date();
+
+      // Calculer l'âge
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const monthDiff = today.getMonth() - birthDate.getMonth();
+
+      // Ajuster si l'anniversaire n'est pas encore passé cette année
+      if (
+        monthDiff < 0 ||
+        (monthDiff === 0 && today.getDate() < birthDate.getDate())
+      ) {
+        age--;
+      }
+
+      // Vérifier que l'âge est valide (pas négatif, pas trop grand)
+      if (age < 0 || age > 120) {
+        console.warn("Âge calculé invalide:", age, "pour la date:", dateStr);
+        return null;
+      }
+
+      return age;
+    } catch (error) {
+      console.error("Erreur lors du calcul de l'âge:", error);
+      return null;
+    }
   };
 
   const handleAddPerson = () => {
-    setNewResidents(prev => [...prev, { nom: '', prenom: '', birthdate: '', cin: '', sexe: 'masculin', phone: '' }]);
+    console.log('[LOG] Ajout d\'une nouvelle personne');
+    const newResident = {
+      nom: '',
+      prenom: '',
+      birthdate: '',
+      cin: '',
+      sexe: 'masculin',
+      phone: ''
+    };
+    setNewResidents(prev => [...prev, newResident]);
     setResidentFieldsScrollable(true);
+
+    // Mettre à jour les références après le prochain rendu (du deuxième code)
+    setTimeout(() => {
+      if (residentInputRefs.current) {
+        const newIndex = newResidents.length;
+        // Focus sur le premier champ (nom) du nouveau résident
+        const nomInputIndex = newIndex * 6; // 6 champs par résident
+        if (residentInputRefs.current[nomInputIndex]) {
+          residentInputRefs.current[nomInputIndex].focus();
+        }
+      }
+    }, 100);
   };
 
   const handleRemovePerson = (index) => {
+    console.log(`[LOG] Suppression de la personne à l'index ${index}`);
     setNewResidents(prev => prev.filter((_, i) => i !== index));
     if (newResidents.length <= 1) {
       setResidentFieldsScrollable(false);
     }
+
+    // Mettre à jour les références (du deuxième code)
+    residentInputRefs.current = residentInputRefs.current.filter((_, i) => {
+      const residentIndex = Math.floor(i / 6);
+      return residentIndex !== index;
+    });
   };
 
   const handlePersonChange = (index, field, value) => {
@@ -1636,6 +2019,62 @@ export default function Interface({ user }) {
     });
   };
 
+  // FONCTION POUR GÉRER LA NAVIGATION AVEC LA TOUCHE ENTRÉE (du deuxième code)
+  const handleKeyDown = (e, currentIndex, fieldType, residentIndex = null) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+
+      // Calculer l'index du prochain champ
+      let nextIndex = null;
+
+      if (residentIndex !== null) {
+        // Navigation dans les champs d'un résident
+        const fieldsPerResident = 6; // nom, prenom, sexe, birthdate, cin, phone
+        const baseIndex = residentIndex * fieldsPerResident;
+
+        switch (fieldType) {
+          case 'nom':
+            nextIndex = baseIndex + 1; // prénom
+            break;
+          case 'prenom':
+            nextIndex = baseIndex + 2; // sexe
+            break;
+          case 'sexe':
+            nextIndex = baseIndex + 3; // birthdate
+            break;
+          case 'birthdate':
+            nextIndex = baseIndex + 4; // cin
+            break;
+          case 'cin':
+            nextIndex = baseIndex + 5; // phone
+            break;
+          case 'phone':
+            // Aller au nom du résident suivant ou au bouton suivant
+            if (residentIndex < newResidents.length - 1) {
+              nextIndex = (residentIndex + 1) * fieldsPerResident; // nom du résident suivant
+            } else {
+              // Dernier résident, aller au bouton "Ajouter un résident" ou "Suivant"
+              const addResidentBtn = document.querySelector(
+                '[data-add-resident-btn]'
+              );
+              if (addResidentBtn) {
+                addResidentBtn.focus();
+              }
+            }
+            break;
+        }
+      } else {
+        // Navigation dans les champs principaux
+        nextIndex = currentIndex + 1;
+      }
+
+      // Focus sur le prochain champ si disponible
+      if (nextIndex !== null && residentInputRefs.current[nextIndex]) {
+        residentInputRefs.current[nextIndex].focus();
+      }
+    }
+  };
+
   const handleNextFromLot = () => {
     if (!addressDetails.lot || !addressDetails.lot.trim()) {
       setFormError(t('lotError'));
@@ -1646,10 +2085,12 @@ export default function Interface({ user }) {
   };
 
   const handleBackToLot = () => {
+    console.log('[LOG] Retour à l\'étape de saisie du lot');
     setAddStep(1);
   };
 
   const handleConfirmSave = async () => {
+    console.log('[LOG] Tentative de sauvegarde de la résidence');
     if (!addressDetails.lot || !addressDetails.lot.trim()) {
       setModalError(t('lotError'));
       return;
@@ -1806,11 +2247,13 @@ export default function Interface({ user }) {
   };
 
   const handleToggleLang = () => {
+    console.log('[LOG] Changement de langue');
     const next = i18n.language === 'fr' ? 'mg' : 'fr';
     i18n.changeLanguage(next);
   };
 
   const handleCancelSelection = () => {
+    console.log('[LOG] Annulation de la sélection d\'emplacement');
     setIsSelectingLocation(false);
     setSelectedLocation(null);
     setSelectedAddress("");
@@ -1828,6 +2271,7 @@ export default function Interface({ user }) {
   };
 
   const handleCancelToSelection = () => {
+    console.log('[LOG] Annulation et retour à la sélection');
     setShowAddAddress(false);
     setIsSelectingLocation(true);
     setSelectedAddress("");
@@ -1860,20 +2304,24 @@ export default function Interface({ user }) {
   };
 
   const handleCloseResidence = () => {
+    console.log('[LOG] Fermeture de la page Résidences');
     setShowResidence(false);
     setResidenceDetailMode(false);
   };
 
   const handleCloseStatistique = () => {
+    console.log('[LOG] Fermeture de la page Statistiques');
     setShowStatistique(false);
   };
 
   const handleCloseUserPage = () => {
+    console.log('[LOG] Fermeture de la page Utilisateur');
     setShowUserPage(false);
     setUserPageState({ showPasswordModal: false });
   };
 
   const handleClosePendingResidences = () => {
+    console.log('[LOG] Fermeture de la page Demandes en attente');
     setShowPendingResidences(false);
     setResidenceToSelect(null);
   };
@@ -1883,18 +2331,21 @@ export default function Interface({ user }) {
   };
 
   const handleZoomIn = () => {
+    console.log('[LOG] Zoom avant');
     if (map) {
       map.setZoom(map.getZoom() + 1);
     }
   };
 
   const handleZoomOut = () => {
+    console.log('[LOG] Zoom arrière');
     if (map) {
       map.setZoom(map.getZoom() - 1);
     }
   };
 
   const handleCenterMap = () => {
+    console.log('[LOG] Centrage sur la zone');
     if (map) {
       handleFocusOnPolygon();
       setShouldZoomToPolygon(true);
@@ -1902,10 +2353,12 @@ export default function Interface({ user }) {
   };
 
   const handleMapTypeChange = () => {
+    console.log('[LOG] Changement de type de carte');
     setMapType(mapType === "satellite" ? "roadmap" : "satellite");
   };
 
   const handleResidenceMarkerClick = (residenceId) => {
+    console.log(`[LOG] Clic sur le marqueur de résidence ${residenceId}`);
     if (map) {
       setZoomBeforeResidenceClick(map.getZoom());
       setCenterBeforeResidenceClick(map.getCenter());
@@ -1915,6 +2368,7 @@ export default function Interface({ user }) {
   };
 
   const handleCloseResidenceInfo = () => {
+    console.log('[LOG] Fermeture des informations de résidence');
     setClickedResidenceId(null);
 
     if (map && zoomBeforeResidenceClick && centerBeforeResidenceClick) {
@@ -1922,38 +2376,6 @@ export default function Interface({ user }) {
         map.setCenter(centerBeforeResidenceClick);
         map.setZoom(zoomBeforeResidenceClick);
       }, 100);
-    }
-  };
-
-  const handleViewOnMap = (residence) => {
-    console.log('[INTERFACE] Affichage résidence sur carte:', residence);
-
-    setShowResidence(false);
-    setResidenceDetailMode(false);
-
-    if (map) {
-      setPreviousZoom(map.getZoom());
-      setPreviousCenter(map.getCenter());
-    }
-
-    if (map && (residence.latitude || residence.lat) && (residence.longitude || residence.lng)) {
-      const lat = residence.latitude || residence.lat;
-      const lng = residence.longitude || residence.lng;
-
-      console.log('[INTERFACE] Centrage sur:', { lat, lng });
-
-      map.panTo({ lat: parseFloat(lat), lng: parseFloat(lng) });
-      map.setZoom(18);
-
-      setClickedResidenceId(residence.id);
-      setSelectedResidenceFromSearch(residence);
-
-      if (!residences.some(r => r.id === residence.id)) {
-        setResidences(prev => [residence, ...prev]);
-      }
-    } else {
-      console.warn('[INTERFACE] Résidence sans coordonnées:', residence);
-      alert(t('noCoordinates'));
     }
   };
 
@@ -2190,6 +2612,7 @@ export default function Interface({ user }) {
 
   const activePolygon = (fokontanyPolygon && fokontanyPolygon.length > 0) ? fokontanyPolygon : ANDABOLY_POLYGON;
 
+  // Rendu JSX
   return (
     <div className="relative w-full h-screen bg-[#F2F2F2] overflow-hidden">
       {isAnyPageOpen && (
@@ -2208,12 +2631,18 @@ export default function Interface({ user }) {
           `}>
             <Search className="mr-3 flex-shrink-0 text-gray-600" size={20} />
 
-            <form onSubmit={handleSearchSubmit} className="flex-1 flex items-center">
+            <form onSubmit={showResidence ? handleResidenceSearchSubmit : handleInterfaceSearchSubmit} className="flex-1 flex items-center">
               <input
                 ref={searchRef}
                 type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                value={showResidence ? residenceSearchQuery : interfaceSearchQuery}
+                onChange={(e) => {
+                  if (showResidence) {
+                    setResidenceSearchQuery(e.target.value);
+                  } else {
+                    setInterfaceSearchQuery(e.target.value);
+                  }
+                }}
                 placeholder={getSearchPlaceholder()}
                 disabled={isSearchDisabled || isAddAddressModalOpen}
                 className={`
@@ -2253,7 +2682,7 @@ export default function Interface({ user }) {
                   isSelectingLocation
                     ? t('clickOnMap')
                     : isAddAddressModalOpen
-                      ? "Une modal est déjà ouverte"
+                      ? t('modalAlreadyOpen')
                       : t('addAddress')
                 }
               >
@@ -2271,6 +2700,7 @@ export default function Interface({ user }) {
             <button
               onClick={() => {
                 if (!showAddAddress) {
+                  console.log('[LOG] Clic sur bouton notifications');
                   setShowNotifications(!showNotifications);
                   fetchAllNotifications();
                 }
@@ -2282,7 +2712,7 @@ export default function Interface({ user }) {
                 ? 'bg-gray-300 text-gray-400 cursor-not-allowed'
                 : 'bg-white/50 backdrop-blur-sm hover:bg-white transition-all duration-300 shadow-sm border border-gray-200/60 hover:border-gray-300/80'
                 }`}
-              title={isAddAddressModalOpen ? "Modal ouverte - désactivé" : showAddAddress ? "Fermez la modal d'ajout d'adresse pour accéder aux notifications" : t('notifications')}
+              title={isAddAddressModalOpen ? t("modalOpenDisabled") : showAddAddress ? t("closeModalToAccessNotifications") : t('notifications')}
             >
               <Bell size={20} className={`${isAddAddressModalOpen ? 'text-gray-400' : showAddAddress ? 'text-gray-400' : 'text-gray-600 hover:text-gray-800 transition-all duration-300'}`} />
               {totalNotificationsCount > 0 && (
@@ -2297,7 +2727,7 @@ export default function Interface({ user }) {
               disabled={isAddAddressModalOpen}
               className={`w-8 h-8 rounded-full flex items-center justify-center ${isAddAddressModalOpen ? 'bg-gray-300 text-gray-400 cursor-not-allowed' : 'bg-white/50 backdrop-blur-sm hover:bg-white transition-all duration-300 shadow-sm border border-gray-200/60 hover:border-gray-300/80'
                 }`}
-              title={isAddAddressModalOpen ? "Modal ouverte - désactivé" : "Changer la langue"}
+              title={isAddAddressModalOpen ? t("modalOpenDisabled") : t("switchLanguage")}
             >
               <span className="text-sm font-medium" style={{ color: isAddAddressModalOpen ? '#9ca3af' : '#374151' }}>{i18n.language === 'fr' ? 'FR' : 'MG'}</span>
             </button>
@@ -2309,7 +2739,7 @@ export default function Interface({ user }) {
                 ? 'bg-gray-300 text-gray-400 cursor-not-allowed'
                 : 'bg-white/50 backdrop-blur-sm hover:bg-white transition-all duration-300 shadow-sm border border-gray-200/60 hover:border-gray-300/80'
                 }`}
-              title={isAddAddressModalOpen ? "Modal ouverte - désactivé" : t('profile')}
+              title={isAddAddressModalOpen ? t("modalOpenDisabled") : t('profile')}
             >
               <div className="w-6 h-6 rounded-full bg-gray-700 flex items-center justify-center">
                 <span className="text-xs font-bold text-white">
@@ -2340,10 +2770,11 @@ export default function Interface({ user }) {
                   onClick={() => handleNotificationClick(notification)}
                 >
                   <div className="flex justify-between items-start mb-2">
-                    <h4 className="font-medium text-sm text-gray-800">{notification.title}</h4>
+                    <h4 className="font-medium text-sm text-gray-800">{translateMessage(notification.title)}</h4>
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
+                        console.log('[LOG] Clic sur bouton X pour marquer comme lu');
                         markAsRead(notification.id);
                       }}
                       className="text-gray-400 hover:text-red-500 text-xs"
@@ -2352,12 +2783,12 @@ export default function Interface({ user }) {
                       <X size={14} />
                     </button>
                   </div>
-                  <p className="text-xs text-gray-600 mb-2">{notification.message}</p>
+                  <p className="text-xs text-gray-600 mb-2">{translateMessage(notification.message)}</p>
                   <div className="flex justify-between items-center">
                     <span className="text-xs text-gray-400">
                       {formatNotificationDate(notification.created_at)}
                     </span>
-                    <span className={`w-2 h-2 rounded-full ${notification.type === 'pending' ? 'bg-yellow-500' : 'bg-blue-500'
+                    <span className={`w-2 h-2 rounded-full ${notification.type === 'pending' ? 'bg-blue-500' : 'bg-yellow-400'
                       }`}></span>
                   </div>
                 </div>
@@ -2441,8 +2872,12 @@ export default function Interface({ user }) {
                   <div className="flex-1">
                     <div className="flex items-center justify-between mb-1">
                       <div className="flex items-center space-x-2">
-                        <span className="font-medium text-gray-800 text-base">{fokontanyName || 'Non spécifié'}</span>
-                        <span className="text-sm text-gray-500">(-23.352776, 43.684839)</span>
+                        <span className="font-medium text-gray-800 text-base">{fokontanyName || t('notSpecified')}</span>
+                        {selectedLocation && (
+                          <span className="text-sm text-gray-500">
+                            ({selectedLocation.lat.toFixed(6)}, {selectedLocation.lng.toFixed(6)})
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -2456,6 +2891,15 @@ export default function Interface({ user }) {
                       type="text"
                       value={addressDetails.lot}
                       onChange={(e) => handleAddressDetailsChange('lot', e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          // Focus sur le premier champ du premier résident s'il existe
+                          if (newResidents.length > 0 && residentInputRefs.current[0]) {
+                            residentInputRefs.current[0].focus();
+                          }
+                        }
+                      }}
                       placeholder={t('lotLabel')}
                       className={`w-full px-4 py-3 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${formError ? "border-red-500" : "border-gray-300"}`}
                       style={{ height: '42px', fontSize: '14px' }}
@@ -2473,7 +2917,14 @@ export default function Interface({ user }) {
                       <h4 className="font-semibold text-gray-800 text-sm">{t('addResident')}</h4>
                       <button 
                         onClick={handleAddPerson}
+                        data-add-resident-btn
                         className="text-xs bg-gray-800 text-white px-3 py-1.5 rounded-lg hover:bg-gray-900 transition-all duration-200 flex items-center"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleAddPerson();
+                          }
+                        }}
                       >
                         <Plus size={14} className="mr-1" />
                         {t('addResident')}
@@ -2497,10 +2948,13 @@ export default function Interface({ user }) {
                           const age = calculateAgeFromDate(p.birthdate);
                           const showCinField = age !== null && age >= 18;
                           
+                          // Calculer les index pour les références (du deuxième code)
+                          const baseIndex = idx * 6;
+
                           return (
                             <div key={idx} className="border border-gray-200 rounded-xl p-3 space-y-3 bg-white">
                               <div className="flex justify-between items-center">
-                                <strong className="text-gray-800 text-sm">
+                                <strong className="text-sm text-gray-800">
                                   {p.nom || p.prenom ? `${p.nom} ${p.prenom}` : `${t('resident')} ${idx + 1}`}
                                 </strong>
                                 <button 
@@ -2516,20 +2970,24 @@ export default function Interface({ user }) {
                                 <div className="grid grid-cols-2 gap-3">
                                   <div>
                                     <input 
+                                      ref={(el) => residentInputRefs.current[baseIndex] = el}
                                       type="text" 
                                       placeholder={t('lastName')}
                                       value={p.nom} 
                                       onChange={(e) => handlePersonChange(idx, 'nom', e.target.value)} 
+                                      onKeyDown={(e) => handleKeyDown(e, baseIndex, 'nom', idx)}
                                       className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-transparent"
                                       style={{ height: '36px', fontSize: '12px' }}
                                     />
                                   </div>
                                   <div>
                                     <input 
+                                      ref={(el) => residentInputRefs.current[baseIndex + 1] = el}
                                       type="text" 
                                       placeholder={t('firstName')}
                                       value={p.prenom} 
                                       onChange={(e) => handlePersonChange(idx, 'prenom', e.target.value)} 
+                                      onKeyDown={(e) => handleKeyDown(e, baseIndex + 1, 'prenom', idx)}
                                       className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-transparent"
                                       style={{ height: '36px', fontSize: '12px' }}
                                     />
@@ -2570,10 +3028,12 @@ export default function Interface({ user }) {
                                   </div>
                                   <div>
                                     <input 
+                                      ref={(el) => residentInputRefs.current[baseIndex + 3] = el}
                                       type="date" 
                                       placeholder={t('birthDate')}
                                       value={p.birthdate} 
                                       onChange={(e) => handlePersonChange(idx, 'birthdate', e.target.value)} 
+                                      onKeyDown={(e) => handleKeyDown(e, baseIndex + 3, 'birthdate', idx)}
                                       className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-transparent"
                                       style={{ height: '36px', fontSize: '12px' }}
                                     />
@@ -2584,13 +3044,15 @@ export default function Interface({ user }) {
                                   <div>
                                     {showCinField ? (
                                       <input 
+                                        ref={(el) => residentInputRefs.current[baseIndex + 4] = el}
                                         type="text" 
                                         placeholder={t('cin')}
                                         value={p.cin} 
                                         onChange={(e) => handlePersonChange(idx, 'cin', e.target.value)} 
+                                        onKeyDown={(e) => handleKeyDown(e, baseIndex + 4, 'cin', idx)}
                                         className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-transparent"
                                         style={{ height: '36px', fontSize: '12px' }}
-                                    />
+                                      />
                                     ) : p.birthdate ? (
                                       <input 
                                         type="text" 
@@ -2613,10 +3075,12 @@ export default function Interface({ user }) {
                                   </div>
                                   <div>
                                     <input 
+                                      ref={(el) => residentInputRefs.current[baseIndex + 5] = el}
                                       type="text" 
                                       placeholder={t('phone')}
                                       value={p.phone} 
                                       onChange={(e) => handlePersonChange(idx, 'phone', e.target.value)} 
+                                      onKeyDown={(e) => handleKeyDown(e, baseIndex + 5, 'phone', idx)}
                                       className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-transparent"
                                       style={{ height: '36px', fontSize: '12px' }}
                                     />
@@ -2769,7 +3233,7 @@ export default function Interface({ user }) {
                 <div className="flex items-center">
                   <MapPin size={18} className="text-gray-700 mr-2" />
                   <span className="text-sm font-medium text-gray-800">
-                    Carte {fokontanyName}
+                    {t('map')} {fokontanyName}
                   </span>
                 </div>
                 
@@ -2787,7 +3251,7 @@ export default function Interface({ user }) {
                   className="text-xs text-gray-500 bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-lg transition-all duration-200 flex items-center"
                 >
                   <Eye size={14} className="mr-1" />
-                  Voir carte
+                  {t('Voir la carte')}
                 </button>
               </div>
             )}
@@ -2808,6 +3272,7 @@ export default function Interface({ user }) {
                 {/* Résidences */}
                 <button
                   onClick={() => {
+                    console.log('[LOG] Clic sur menu Résidences');
                     if (showResidence) {
                       if (residenceDetailMode) {
                         setResidenceDetailMode(false);
@@ -2844,6 +3309,7 @@ export default function Interface({ user }) {
                 {/* Statistiques */}
                 <button
                   onClick={() => {
+                    console.log('[LOG] Clic sur menu Statistiques');
                     if (showStatistique) {
                       setShowStatistique(false);
                     } else {
@@ -2877,6 +3343,7 @@ export default function Interface({ user }) {
                 {currentUser?.role === 'secretaire' && (
                   <button
                     onClick={() => {
+                      console.log('[LOG] Clic sur menu Demandes en attente');
                       if (showPendingResidences) {
                         setShowPendingResidences(false);
                         setResidenceToSelect(null);
@@ -2921,8 +3388,8 @@ export default function Interface({ user }) {
           }}>
           <ResidencePage
             onBack={handleCloseResidence}
-            searchQuery={searchQuery}
-            onSearchChange={setSearchQuery}
+            searchQuery={residenceSearchQuery}
+            onSearchChange={setResidenceSearchQuery}
             onViewOnMap={handleViewOnMap}
             detailMode={residenceDetailMode}
             onEnterDetail={handleEnterResidenceDetail}
@@ -2978,7 +3445,7 @@ export default function Interface({ user }) {
               onClick={handleZoomIn}
               disabled={isAddAddressModalOpen}
               className={`w-10 h-10 ${isAddAddressModalOpen ? 'bg-gray-300 cursor-not-allowed' : 'bg-white/95 backdrop-blur-sm hover:bg-white'} rounded-full shadow-lg flex items-center justify-center transition-all duration-300 border ${isAddAddressModalOpen ? 'border-gray-300' : 'border-gray-200/60 hover:border-gray-300/80 hover:shadow-xl'}`}
-              title={isAddAddressModalOpen ? "Modal ouverte - désactivé" : t('zoomIn')}
+              title={isAddAddressModalOpen ? t("modalOpenDisabled") : t('zoomIn')}
             >
               <Plus size={20} className={isAddAddressModalOpen ? "text-gray-400" : "text-gray-700 hover:text-gray-800 transition-all duration-300"} />
             </button>
@@ -2986,7 +3453,7 @@ export default function Interface({ user }) {
               onClick={handleZoomOut}
               disabled={isAddAddressModalOpen}
               className={`w-10 h-10 ${isAddAddressModalOpen ? 'bg-gray-300 cursor-not-allowed' : 'bg-white/95 backdrop-blur-sm hover:bg-white'} rounded-full shadow-lg flex items-center justify-center transition-all duration-300 border ${isAddAddressModalOpen ? 'border-gray-300' : 'border-gray-200/60 hover:border-gray-300/80 hover:shadow-xl'}`}
-              title={isAddAddressModalOpen ? "Modal ouverte - désactivé" : t('zoomOut')}
+              title={isAddAddressModalOpen ? t("modalOpenDisabled") : t('zoomOut')}
             >
               <Minus size={20} className={isAddAddressModalOpen ? "text-gray-400" : "text-gray-700 hover:text-gray-800 transition-all duration-300"} />
             </button>
@@ -2994,7 +3461,7 @@ export default function Interface({ user }) {
               onClick={handleCenterMap}
               disabled={isAddAddressModalOpen}
               className={`w-10 h-10 ${isAddAddressModalOpen ? 'bg-gray-300 cursor-not-allowed' : 'bg-white/95 backdrop-blur-sm hover:bg-white'} rounded-full shadow-lg flex items-center justify-center transition-all duration-300 border ${isAddAddressModalOpen ? 'border-gray-300' : 'border-gray-200/60 hover:border-gray-300/80 hover:shadow-xl'}`}
-              title={isAddAddressModalOpen ? "Modal ouverte - désactivé" : t('viewZone')}
+              title={isAddAddressModalOpen ? t("modalOpenDisabled") : t('viewZone')}
             >
               <LocateFixed size={20} className={isAddAddressModalOpen ? "text-gray-400" : "text-gray-700 hover:text-gray-800 transition-all duration-300"} />
             </button>
@@ -3005,7 +3472,7 @@ export default function Interface({ user }) {
               onClick={handleMapTypeChange}
               disabled={isAddAddressModalOpen}
               className={`w-10 h-10 ${isAddAddressModalOpen ? 'bg-gray-300 cursor-not-allowed' : 'bg-white/95 backdrop-blur-sm hover:bg-white'} rounded-full shadow-lg flex items-center justify-center transition-all duration-300 hover:shadow-xl border ${isAddAddressModalOpen ? 'border-gray-300' : 'border-gray-200/60 hover:border-gray-300/80'}`}
-              title={isAddAddressModalOpen ? "Modal ouverte - désactivé" : mapType === "satellite" ? t('switchToPlan') : t('switchToSatellite')}
+              title={isAddAddressModalOpen ? t("modalOpenDisabled") : mapType === "satellite" ? t('switchToPlan') : t('switchToSatellite')}
             >
               <Layers size={22} className={isAddAddressModalOpen ? "text-gray-400" : "text-gray-700 hover:text-gray-800 transition-all duration-300"} />
             </button>
