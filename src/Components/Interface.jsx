@@ -114,272 +114,142 @@ const isPointInPolygon = (point, polygon) => {
 // Configuration de l'URL de base pour l'API (compatible Vite)
 const API_BASE = import.meta.env.VITE_API_BASE || '';
 
-// Fonction pour traduire les messages de notification mixtes
+// Fonction pour traduire les messages de notification mixtes - CORRIGÉE ET SIMPLIFIÉE
 const translateNotificationMessage = (message, t, i18n) => {
   if (!message) return message;
 
-  // Dictionnaire complet de traduction français -> malagasy
-  const frToMg = {
-    // Mots français -> malagasy
-    "Résidence rejetée": "Trano fonenana nolavina",
-"Résidence approuvée": "Trano fonenana nekena",
-"Votre résidence": "Ny fonenanareo",
-"a été rejetée": "dia nolavina",
-"a été approuvée": "dia nekena",
-"Motif:": "Antony:",
-"notification + pour le": "fampandrenesana ho an'ny",
-"Résidence": "Trano fonenana",
-"Soumis par": "Nampidirin'i",
-"Agent M": "Agent M",
-"L'agent": "Ny agent",
-"a ajouté une nouvelle résidence": "nanampy trano fonenana vaovao",
-"qui nécessite votre approbation": "izay mila fanekenao",
-"nécessite votre approbation": "mila fanekenao",
-"approbation": "fanekena",
-"résidence": "trano fonenana",
-"approuvée": "nekena",
-"nouvelle": "vaovao",
-"ajouté": "nanampy",
-"Nouvelle résidence à approuver": "Trano fonenana vaovao mila ankatoavina",
-"Résidence à approuver pour": "Trano fonenana mila ankatoavina ho an'ny",
-"Adresse ajoutée par": "Adiresy nampidirin'i",
-"Approbation requise": "Ilaina ny fanekena",
-"Sans coordonnées": "Tsy misy kaordinà",
-"Non spécifié": "Tsy voafaritra",
-"rejetée": "nolavina",
-"rejetée.": "nolavina.",
-"rejetée:": "nolavina:",
-"notification": "fampandrenesana",
-"pour le": "ho an'ny",
-"Votre résidence": "Ny tranonareo",
-"a été": "dia",
-"Raison:": "Antony:",
-"notification pour le": "fampandrenesana ho an'ny",
-"Résidence": "Trano fonenana",
-"notification": "fampandrenesana",
-"Agent": "Agent",
-"Nouvelle": "Vaovao",
-"à approuver": "mila ankatoavina"
+  console.log('[TRAD] Message original à traduire:', message);
+  console.log('[TRAD] Langue actuelle:', i18n.language);
 
-  };
-
-  // Dictionnaire malagasy -> français
-  const mgToFr = {
-    // Mots malagasy -> français
-    "Trano fonenana nolavina": "Résidence rejetée",
-"Trano fonenana ekena": "Résidence approuvée",
-"Ny tranonareo": "Votre résidence",
-"dia nolavina": "a été rejetée",
-"dia ekena": "a été approuvée",
-"Antony:": "Motif:",
-"fampandrenesana ho an'ny": "notification pour le",
-"Trano fonenana": "Résidence",
-"Nampitondrain'i": "Soumis par",
-"Agent M": "Agent M",
-"Ny Mpandrindra": "L’agent",
-"nanampy trano fonenana vaovao": "a ajouté une nouvelle résidence",
-"izay mila fanekenao": "qui nécessite votre approbation",
-"mila fanekenao": "nécessite votre approbation",
-"fanekena": "approbation",
-"trano fonenana": "résidence",
-"ekena": "approuvée",
-"vaovao": "nouvelle",
-"nampiana": "ajouté",
-"Trano fonenana vaovao tokony hotapahina": "Nouvelle résidence à approuver",
-"Trano fonenana tokony hotapahina ho an'ny": "Résidence à approuver pour",
-"Adiresy nampianin'i": "Adresse ajoutée par",
-"Ilaina ny fanekena": "Approbation requise",
-"Tsy misy teboka": "Sans coordonnées",
-"Tsy voafaritra": "Non spécifié",
-"nolavina": "rejetée",
-"nolavina.": "rejetée.",
-"nolavina:": "rejetée:",
-"fampandrenesana": "notification",
-"ho an'ny": "pour le",
-"dia": "a été",
-"fampandrenesana": "notification",
-"ho an'ny": "pour le",
-"Fonenana": "Résidence",
-"Mpiasam-panjakana": "Agent",
-"zaovao": "Nouveau",
-"tokony ankatoavina": "à approuver"
-
-  };
-
-  let translated = message;
-
-  // Détecter la direction de traduction
   const isFrenchToMalagasy = i18n.language === "mg";
-
+  
+  // Si le message est vide ou null, retourner tel quel
+  if (!message || message.trim() === '') return message;
+  
+  // Créer une copie pour travailler
+  let translated = message;
+  
   if (isFrenchToMalagasy) {
-    console.log("[TRAD] Traduction français -> malagasy");
-    console.log("[TRAD] Message original:", message);
-
-    // Traduire français -> malagasy COMPLÈTEMENT
-    Object.entries(frToMg).forEach(([fr, mg]) => {
-      if (translated.includes(fr)) {
-        translated = translated.replace(new RegExp(fr, "g"), mg);
-      }
-    });
-
-    // CORRECTIONS SPÉCIFIQUES POUR LES ERREURS COMMUNES
-    // 1. Correction de "Vaovao! trano fonenana tokony hotapahina"
-    translated = translated.replace(
-      /Nouvelle résidence à approuver/g,
-      "Trano fonenana vaovao tokony ankatoavina"
-    );
-    translated = translated.replace(
-      /Nouvelle résidence à approuver/g,
-      "Trano fonenana vaovao tokony ankatoavina"
-    );
-    
-    // 2. Correction de "Nouvelle trano fonenana tokony hotapahina"
-    translated = translated.replace(
-      /Nouvelle résidence à approuver/g,
-      "Trano fonenana vaovao tokony ankatoavina"
-    );
-    
-    // 3. Correction de "Nouvelle résidence à approuver" (au cas où)
-    translated = translated.replace(
-      /Nouvelle résidence à approuver/g,
-      "Trano fonenana vaovao tokony ankatoavina"
-    );
-
-    // Gérer les patterns spécifiques avec variables
-    // Pattern: "Résidence rejetée\n\nVotre résidence a été rejetée. Motif: fampandrenesana ho an'ny Trano fonenana \"12345\" - Nampitondrain'i: Agent M"
-    const rejectionPattern =
-      /Résidence rejetée\s*\n\s*Votre résidence a été rejetée\. Motif: fampandrenesana ho an'ny Trano fonenana "([^"]+)" - Nampitondrain'i: (.+)/g;
-    if (rejectionPattern.test(message)) {
-      const residenceNumber = message.match(/Trano fonenana "([^"]+)"/)?.[1];
-      const agentName = message.match(/Nampitondrain'i: (.+)/)?.[1];
-      if (residenceNumber && agentName) {
-        translated = `${t('residenceRejected')}\n\n${t('yourResidence')} ${t('hasBeenRejected')}. ${t('reason')} fampandrenesana ho an'ny Trano fonenana "${residenceNumber}" - ${t('submittedBy')}: ${agentName}`;
-      }
-    }
-
-    // Pattern: "Trano fonenana nolavina\n\nVotre résidence a été rejetée. Motif: fampandrenesana ho an'ny Trano fonenana \"12345\" - Nampitondrain'i: Agent M"
-    const mixedRejectionPattern =
-      /Trano fonenana nolavina\s*\n\s*Votre résidence a été rejetée\. Motif: fampandrenesana ho an'ny Trano fonenana "([^"]+)" - Nampitondrain'i: (.+)/g;
-    if (mixedRejectionPattern.test(message)) {
-      const residenceNumber = message.match(/Trano fonenana "([^"]+)"/)?.[1];
-      const agentName = message.match(/Nampitondrain'i: (.+)/)?.[1];
-      if (residenceNumber && agentName) {
-        translated = `${t('residenceRejected')}\n\n${t('yourResidence')} ${t('hasBeenRejected')}. ${t('reason')} fampandrenesana ho an'ny Trano fonenana "${residenceNumber}" - ${t('submittedBy')}: ${agentName}`;
-      }
-    }
-
-    // Pattern: "Résidence rejetée\n\nNy tranonareo dia nolavina. Antony: fampandrenesana ho an'ny Trano fonenana \"12345\" - Nampitondrain'i: Agent M"
-    const mixedPattern2 =
-      /Résidence rejetée\s*\n\s*Ny tranonareo dia nolavina\. Antony: fampandrenesana ho an'ny Trano fonenana "([^"]+)" - Nampitondrain'i: (.+)/g;
-    if (mixedPattern2.test(message)) {
-      const residenceNumber = message.match(/Trano fonenana "([^"]+)"/)?.[1];
-      const agentName = message.match(/Nampitondrain'i: (.+)/)?.[1];
-      if (residenceNumber && agentName) {
-        translated = `${t('residenceRejected')}\n\n${t('yourResidence')} ${t('hasBeenRejected')}. ${t('reason')} fampandrenesana ho an'ny Trano fonenana "${residenceNumber}" - ${t('submittedBy')}: ${agentName}`;
-      }
-    }
-
-    // S'assurer que tous les mots français sont traduits
-    // Remplacer les mots français restants
+    // Traduction français -> malgache COMPLÈTE
     translated = translated
-      .replace(/Résidence/g, t('trano fonenana'))
-      .replace(/rejetée/g, "nolavina")
-      .replace(/Votre résidence/g, t('yourResidence'))
-      .replace(/a été/g, "dia")
-      .replace(/Motif:/g, t('antony'))
-      .replace(/notification pour le/g, "fampandrenesana ho an'ny")
-      .replace(/Soumis par:/g, t('nampidirin ny') + ":")
-      .replace(/Soumis par/g, t('nampidirin ny'))
-      .replace(/notification/g, t('fampandrenesana'))
-      .replace(/pour le/g, "ho an'ny")
-      .replace(/Résidence/g, t('trano fonenana'))
-      .replace(/Agent/g, "Mpandrindra")
-      .replace(/à approuver/g, "tokony ankatoavina")
-      .replace(/Nouvelle résidence/g, "Trano fonenana vaovao");
-
-    console.log("[TRAD] Message traduit:", translated);
+      // Titres
+      .replace(/Résidence approuvée/g, 'Trano fonenana ekena')
+      .replace(/Résidence rejetée/g, 'Trano fonenana nolavina')  // CORRECTION ICI
+      .replace(/Nouvelle résidence à approuver/g, 'Trano fonenana vaovao tokony ankatoavina')
+      .replace(/Nouvelle Trano fonenana à approuver/g, 'Trano fonenana vaovao tokony ankatoavina')
+      
+      // Phrases complètes
+      .replace(/Votre résidence a été approuvée/g, 'Ny fonenanareo dia ekena')
+      .replace(/Votre résidence a été rejetée/g, 'Ny fonenanareo dia nolavina')  // CORRECTION ICI
+      .replace(/Votre résidence est rejetée/g, 'Ny fonenanareo dia nolavina')    // CORRECTION ICI
+      .replace(/Votre résidence est approuvée/g, 'Ny fonenanareo dia ekena')
+      .replace(/a été approuvée/g, 'dia ekena')
+      .replace(/a été rejetée/g, 'dia nolavina')  // CORRECTION ICI
+      .replace(/est rejetée/g, 'dia nolavina')    // CORRECTION ICI
+      .replace(/est approuvée/g, 'dia ekena')
+      .replace(/a été/g, 'dia')
+      .replace(/est/g, 'dia')
+      
+      // CORRECTION SPÉCIFIQUE pour "nonyvina" -> "nolavina"
+      .replace(/nonyvina/g, 'nolavina')
+      
+      // Autres termes
+      .replace(/Motif:/g, 'Antony:')
+      .replace(/Raison:/g, 'Antony:')
+      .replace(/notification pour Résidence/g, 'fampandrenesana ho an\'ny trano fonenana')
+      .replace(/notification pour le/g, 'fampandrenesana ho an\'ny')
+      .replace(/notification pour/g, 'fampandrenesana ho an\'ny')
+      .replace(/Soumis par/g, 'Nampitondrain\'i')
+      .replace(/Soumis par:/g, 'Nampitondrain\'i:')
+      .replace(/Quartier:/g, 'Fari-tany:')
+      .replace(/Quartier non spécifié/g, 'Fari-tany tsy fantatra')
+      .replace(/Quartier inconnu/g, 'Fari-tany tsy fantatra')
+      .replace(/Agent M/g, 'Agent M')
+      .replace(/Agent inconnu/g, 'Agent tsy fantatra')
+      
+      // Structure des messages
+      .replace(/Résidence "(\d+)" - Quartier:/g, 'Trano fonenana "$1" - Fari-tany:')
+      .replace(/Résidence "([^"]+)" - Soumis par:/g, 'Trano fonenana "$1" - Nampitondrain\'i:')
+      
+      // Mots individuels
+      .replace(/Résidence/g, 'Trano fonenana')
+      .replace(/résidence/g, 'trano fonenana')
+      .replace(/approuvée/g, 'ekena')
+      .replace(/rejetée/g, 'nolavina')  // CORRECTION ICI
+      .replace(/rejetée\./g, 'nolavina.')  // Avec point
+      .replace(/rejetée:/g, 'nolavina:')    // Avec deux-points
+      .replace(/nouvelle/g, 'vaovao')
+      .replace(/notification/g, 'fampandrenesana')
+      .replace(/pour/g, 'ho an\'ny')
+      .replace(/le/g, 'ny')
+      .replace(/la/g, 'ny')
+      .replace(/des/g, 'ny')
+      .replace(/un/g, 'ny');
+      
+    // Correction spécifique pour les messages avec "Lot XX"
+    const lotMatch = translated.match(/\(Lot (\d+)\)/);
+    if (lotMatch) {
+      const lotNumber = lotMatch[1];
+      translated = translated.replace(/\(Lot \d+\)/, `(Lot ${lotNumber})`);
+    }
+    
   } else {
-    console.log("[TRAD] Traduction malagasy -> français");
-    console.log("[TRAD] Message original:", message);
-
-    // Traduire malagasy -> français COMPLÈTEMENT
-    Object.entries(mgToFr).forEach(([mg, fr]) => {
-      if (translated.includes(mg)) {
-        translated = translated.replace(new RegExp(mg, "g"), fr);
-      }
-    });
-
-    // CORRECTIONS SPÉCIFIQUES POUR LES ERREURS COMMUNES
-    // 1. Correction de "Vaovao! trano fonenana tokony hotapahina"
-    translated = translated.replace(
-      /Trano fonenana vaovao tokony ankatoavina/g,
-      t('newResidenceToApprove')
-    );
-    translated = translated.replace(
-      /Trano fonenana vaovao tokony ankatoavina/g,
-      t('newResidenceToApprove')
-    );
-    
-    // 2. Correction de "Trano fonenana vaovao" (forme incomplète)
-    translated = translated.replace(
-      /Trano fonenana vaovao/g,
-      "Nouvelle résidence"
-    );
-
-    // Gérer les patterns spécifiques avec variables
-    // Pattern: "Trano fonenana nolavina\n\nNy tranonareo dia nolavina. Antony: fampandrenesana ho an'ny Trano fonenana \"12345\" - Nampitondrain'i: Agent M"
-    const rejectionPatternMg =
-      /Trano fonenana nolavina\s*\n\s*Ny tranonareo dia nolavina\. Antony: fampandrenesana ho an'ny Trano fonenana "([^"]+)" - Nampitondrain'i: (.+)/g;
-    if (rejectionPatternMg.test(message)) {
-      const residenceNumber = message.match(/Trano fonenana "([^"]+)"/)?.[1];
-      const agentName = message.match(/Nampitondrain'i: (.+)/)?.[1];
-      if (residenceNumber && agentName) {
-        translated = `${t('residenceRejected')}\n\n${t('yourResidence')} ${t('hasBeenRejected')}. ${t('reason')}: ${t('notification')} pour le ${t('residence')} "${residenceNumber}" - ${t('submittedBy')}: ${agentName}`;
-      }
-    }
-
-    // Pattern: "Résidence rejetée\n\nNy tranonareo dia nolavina. Antony: fampandrenesana ho an'ny Trano fonenana \"12345\" - Nampitondrain'i: Agent M"
-    const mixedPatternFr =
-      /Résidence rejetée\s*\n\s*Ny tranonareo dia nolavina\. Antony: fampandrenesana ho an'ny Trano fonenana "([^"]+)" - Nampitondrain'i: (.+)/g;
-    if (mixedPatternFr.test(message)) {
-      const residenceNumber = message.match(/Trano fonenana "([^"]+)"/)?.[1];
-      const agentName = message.match(/Nampitondrain'i: (.+)/)?.[1];
-      if (residenceNumber && agentName) {
-        translated = `${t('residenceRejected')}\n\n${t('yourResidence')} ${t('hasBeenRejected')}. ${t('reason')}: ${t('notification')} pour le ${t('residence')} "${residenceNumber}" - ${t('submittedBy')}: ${agentName}`;
-      }
-    }
-
-    // Pattern: "Trano fonenana nolavina\n\nVotre résidence a été rejetée. Motif: fampandrenesana ho an'ny Trano fonenana \"12345\" - Nampitondrain'i: Agent M"
-    const mixedPatternFr2 =
-      /Trano fonenana nolavina\s*\n\s*Votre résidence a été rejetée\. Motif: fampandrenesana ho an'ny Trano fonenana "([^"]+)" - Nampitondrain'i: (.+)/g;
-    if (mixedPatternFr2.test(message)) {
-      const residenceNumber = message.match(/Trano fonenana "([^"]+)"/)?.[1];
-      const agentName = message.match(/Nampitondrain'i: (.+)/)?.[1];
-      if (residenceNumber && agentName) {
-        translated = `${t('residenceRejected')}\n\n${t('yourResidence')} ${t('hasBeenRejected')}. ${t('reason')}: ${t('notification')} pour le ${t('residence')} "${residenceNumber}" - ${t('submittedBy')}: ${agentName}`;
-      }
-    }
-
-    // S'assurer que tous les mots malagasy sont traduits
-    // Remplacer les mots malagasy restants
+    // Traduction malgache -> français COMPLÈTE
     translated = translated
-      .replace(/Trano fonenana/g, t('residence'))
-      .replace(/nolavina/g, "rejetée")
-      .replace(/Ny tranonareo/g, t('yourResidence'))
-      .replace(/dia/g, "a été")
-      .replace(/Antony:/g, t('reason') + ":")
-      .replace(/fampandrenesana ho an\'ny/g, `${t('notification')} pour le`)
-      .replace(/Nampitondrain\'i:/g, t('submittedBy') + ":")
-      .replace(/Nampitondrain\'i/g, t('submittedBy'))
-      .replace(/fampandrenesana/g, t('notification'))
-      .replace(/ho an\'ny/g, "pour le")
-      .replace(/Trano fonenana/g, t('residence'))
-      .replace(/Mpiasam-panjakana/g, t('agent'))
-      .replace(/tokony ankatoavina/g, "à approuver");
-
-    console.log("[TRAD] Message traduit:", translated);
+      // Titres
+      .replace(/Trano fonenana ekena/g, 'Résidence approuvée')
+      .replace(/Trano fonenana nolavina/g, 'Résidence rejetée')
+      .replace(/Trano fonenana vaovao tokony ankatoavina/g, 'Nouvelle résidence à approuver')
+      .replace(/Trano fonenana nonyvina/g, 'Résidence rejetée')  // CORRECTION pour le typo
+      
+      // Phrases complètes
+      .replace(/Ny fonenanareo dia ekena/g, 'Votre résidence a été approuvée')
+      .replace(/Ny fonenanareo dia nolavina/g, 'Votre résidence a été rejetée')
+      .replace(/Ny fonenanareo dia nonyvina/g, 'Votre résidence a été rejetée')  // CORRECTION pour le typo
+      .replace(/dia ekena/g, 'a été approuvée')
+      .replace(/dia nolavina/g, 'a été rejetée')
+      .replace(/dia nonyvina/g, 'a été rejetée')  // CORRECTION pour le typo
+      
+      // Autres termes
+      .replace(/Antony:/g, 'Motif:')
+      .replace(/fampandrenesana ho an'ny trano fonenana/g, 'notification pour Résidence')
+      .replace(/fampandrenesana ho an'ny/g, 'notification pour le')
+      .replace(/Nampitondrain'i/g, 'Soumis par')
+      .replace(/Nampitondrain'i:/g, 'Soumis par:')
+      .replace(/Fari-tany:/g, 'Quartier:')
+      .replace(/Fari-tany tsy fantatra/g, 'Quartier non spécifié')
+      .replace(/Agent tsy fantatra/g, 'Agent inconnu')
+      
+      // Structure des messages
+      .replace(/Trano fonenana "(\d+)" - Fari-tany:/g, 'Résidence "$1" - Quartier:')
+      .replace(/Trano fonenana "([^"]+)" - Nampitondrain'i:/g, 'Résidence "$1" - Soumis par:')
+      
+      // Mots individuels
+      .replace(/Trano fonenana/g, 'Résidence')
+      .replace(/trano fonenana/g, 'résidence')
+      .replace(/ekena/g, 'approuvée')
+      .replace(/ekena\./g, 'approuvée.')
+      .replace(/nolavina/g, 'rejetée')
+      .replace(/nolavina\./g, 'rejetée.')
+      .replace(/nonyvina/g, 'rejetée')  // CORRECTION pour le typo
+      .replace(/nonyvina\./g, 'rejetée.')  // CORRECTION pour le typo
+      .replace(/vaovao/g, 'nouvelle')
+      .replace(/fampandrenesana/g, 'notification')
+      .replace(/ho an'ny/g, 'pour le')
+      .replace(/ny/g, 'le');
+      
+    // Correction spécifique pour les messages avec "Lot XX" en malgache
+    const lotMatch = translated.match(/\(Lot (\d+)\)/);
+    if (lotMatch) {
+      const lotNumber = lotMatch[1];
+      translated = translated.replace(/\(Lot \d+\)/, `(Lot ${lotNumber})`);
+    }
   }
-
+  
+  // Nettoyer les doublons ou espaces inutiles
+  translated = translated.replace(/\s+/g, ' ').trim();
+  
+  console.log('[TRAD] Message traduit:', translated);
   return translated;
 };
 
@@ -481,6 +351,25 @@ export default function Interface({ user }) {
   const translateMessage = (message) => {
     return translateNotificationMessage(message, t, i18n);
   };
+
+  // Fonction pour obtenir le placeholder de recherche CORRIGÉE
+  const getSearchPlaceholder = () => {
+    if (showResidence) {
+      // Si on est dans la page résidence en mode détail
+      if (residenceDetailMode) {
+        return t('searchPlaceholderPersons');
+      }
+      // Si on est dans la page résidence en mode liste
+      return t('searchPlaceholderResidences');
+    } else if (showStatistique || showUserPage || showPendingResidences) {
+      return t('searchDisabled');
+    } else {
+      return t('searchPlaceholder');
+    }
+  };
+
+  // Variable pour désactiver la recherche - DÉFINIE APRÈS getSearchPlaceholder
+  const isSearchDisabled = showStatistique || showUserPage || showPendingResidences;
 
   const createCustomMarkerIcon = (color) => {
     let svg = '';
@@ -1381,6 +1270,36 @@ export default function Interface({ user }) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [showSearchResults, menuDropdownOpen, isAnyPageOpen]);
 
+  // USE EFFECT POUR GÉRER LES CLICS EN DEHORS DU MODAL DE NOTIFICATIONS
+useEffect(() => {
+  const handleClickOutsideNotification = (event) => {
+    // Si le modal de notifications est ouvert
+    if (showNotifications) {
+      // Vérifier si le clic est sur le bouton notification
+      const notificationButton = document.querySelector('[title="notifications"], [title*="notification"]');
+      const isClickOnNotificationButton = notificationButton?.contains(event.target);
+      
+      // Vérifier si le clic est dans le modal de notifications
+      const notificationModal = document.querySelector('.absolute.top-18.right-4.z-60.w-80');
+      const isClickInsideModal = notificationModal?.contains(event.target);
+      
+      // Si le clic n'est ni sur le bouton ni dans le modal, fermer le modal
+      if (!isClickOnNotificationButton && !isClickInsideModal) {
+        console.log('[LOG] Clic en dehors du modal de notifications, fermeture');
+        setShowNotifications(false);
+      }
+    }
+  };
+
+  // Ajouter l'écouteur d'événement
+  document.addEventListener("mousedown", handleClickOutsideNotification);
+  
+  // Nettoyer l'écouteur d'événement
+  return () => {
+    document.removeEventListener("mousedown", handleClickOutsideNotification);
+  };
+}, [showNotifications]); // Dépendance à showNotifications
+
   useEffect(() => {
     if (isAnyPageOpen && isSelectingLocation) {
       setIsSelectingLocation(false);
@@ -1415,19 +1334,6 @@ export default function Interface({ user }) {
       handleCloseResidenceInfo();
     }
   }, [isAnyPageOpen]);
-
-  const getSearchPlaceholder = () => {
-    if (showResidence) {
-      return t('searchPlaceholderResidences');
-    } else if (showStatistique || showUserPage || showPendingResidences) {
-      return t('searchDisabled');
-    } else {
-      return t('searchPlaceholder');
-    }
-  };
-
-  const isSearchDisabled = showStatistique || showUserPage || showPendingResidences;
-
 
   const handleLogout = () => {
     localStorage.removeItem('interfaceState');
@@ -2752,51 +2658,41 @@ export default function Interface({ user }) {
       </div>
 
       {showNotifications && (
-        <div className="absolute top-18 right-4 z-60 w-80 bg-white rounded-2xl shadow-2xl border border-gray-200 max-h-96 overflow-y-auto">
-          <div className="p-4 border-b border-gray-200">
-            <h3 className="font-semibold text-gray-800">{t('notifications')}</h3>
-            <p className="text-xs text-gray-500 mt-1">
-              {notifications.length} {notifications.length !== 1 ? t('notificationsCount') : t('notification')}
-            </p>
+  <div className="absolute top-18 right-4 z-60 w-80 bg-white rounded-2xl shadow-2xl border border-gray-200 max-h-96 overflow-y-auto">
+    <div className="p-4 border-b border-gray-200">
+      <h3 className="font-semibold text-gray-800">{t('notifications')}</h3>
+      <p className="text-xs text-gray-500 mt-1">
+        {notifications.length} {notifications.length !== 1 ? t('notificationsCount') : t('notification')}
+      </p>
+    </div>
+    <div className="p-2">
+      {notifications.length === 0 ? (
+        <p className="text-gray-500 text-center py-4">{t('noUnreadNotifications')}</p>
+      ) : (
+        notifications.map(notification => (
+          <div
+            key={notification.id}
+            className="p-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors duration-200"
+            onClick={() => handleNotificationClick(notification)}
+          >
+            <div className="flex justify-between items-start mb-2">
+              <h4 className="font-medium text-sm text-gray-800">{translateMessage(notification.title)}</h4>
+              {/* Icône X supprimée ici */}
+            </div>
+            <p className="text-xs text-gray-600 mb-2">{translateMessage(notification.message)}</p>
+            <div className="flex justify-between items-center">
+              <span className="text-xs text-gray-400">
+                {formatNotificationDate(notification.created_at)}
+              </span>
+              <span className={`w-2 h-2 rounded-full ${notification.type === 'pending' ? 'bg-blue-500' : 'bg-yellow-400'
+                }`}></span>
+            </div>
           </div>
-          <div className="p-2">
-            {notifications.length === 0 ? (
-              <p className="text-gray-500 text-center py-4">{t('noUnreadNotifications')}</p>
-            ) : (
-              notifications.map(notification => (
-                <div
-                  key={notification.id}
-                  className="p-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors duration-200"
-                  onClick={() => handleNotificationClick(notification)}
-                >
-                  <div className="flex justify-between items-start mb-2">
-                    <h4 className="font-medium text-sm text-gray-800">{translateMessage(notification.title)}</h4>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        console.log('[LOG] Clic sur bouton X pour marquer comme lu');
-                        markAsRead(notification.id);
-                      }}
-                      className="text-gray-400 hover:text-red-500 text-xs"
-                      title={t('markAsRead')}
-                    >
-                      <X size={14} />
-                    </button>
-                  </div>
-                  <p className="text-xs text-gray-600 mb-2">{translateMessage(notification.message)}</p>
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs text-gray-400">
-                      {formatNotificationDate(notification.created_at)}
-                    </span>
-                    <span className={`w-2 h-2 rounded-full ${notification.type === 'pending' ? 'bg-blue-500' : 'bg-yellow-400'
-                      }`}></span>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
+        ))
       )}
+    </div>
+  </div>
+)}
 
       {isSelectingLocation && !isAnyPageOpen && (
         <div className="absolute inset-0 z-40 flex flex-col items-center justify-end pb-8 pointer-events-none">
@@ -3229,14 +3125,11 @@ export default function Interface({ user }) {
           {/* Nouvelle section placée au-dessus du menu */}
           <div className="p-4 border-b border-gray-200/60 bg-white/30">
             {!isAnyPageOpen ? (
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <MapPin size={18} className="text-gray-700 mr-2" />
-                  <span className="text-sm font-medium text-gray-800">
-                    {t('map')} {fokontanyName}
-                  </span>
-                </div>
-                
+              <div className="flex items-center">
+                <MapPin size={18} className="text-gray-700 mr-2" />
+                <span className="text-sm font-medium text-gray-800">
+                  {t('map')} {fokontanyName}
+                </span>
               </div>
             ) : (
               <div className="flex items-center justify-between">
@@ -3258,125 +3151,101 @@ export default function Interface({ user }) {
           </div>
 
           <div className="p-4">
-            {/* Titre "Menu" toujours affiché */}
-            <div className="mb-4">
-              <div className="flex items-center gap-3 mb-3">
-                <Menu size={18} className="text-gray-700" />
-                <span className="text-sm font-semibold text-gray-900">
-                  {t('menu')}
-                </span>
-              </div>
-            
-              {/* MENU FIXE - Pas de collapse/expand */}
-              <div className="space-y-1">
-                {/* Résidences */}
-                <button
-                  onClick={() => {
-                    console.log('[LOG] Clic sur menu Résidences');
-                    if (showResidence) {
-                      if (residenceDetailMode) {
-                        setResidenceDetailMode(false);
-                      } else {
-                        setShowResidence(false);
-                      }
-                    } else {
-                      openPage('residence');
-                    }
-                  }}
-                  className={`w-full flex items-center rounded-xl transition-all duration-200 hover:bg-gray-100 hover:border hover:border-gray-200 ${
-                    showResidence ? "bg-gray-100 border border-gray-200" : ""
-                  }`}
-                  style={{
-                    height: "44px",
-                    padding: "0 12px"
-                  }}
-                >
-                  <div style={{
-                    width: "36px",
-                    display: "flex",
-                    justifyContent: "center",
-                    marginRight: "10px"
-                  }}>
-                    <MapPin size={20} className={showResidence ? "text-gray-800" : "text-gray-700"} />
-                  </div>
-                  <span style={{
-                    fontSize: "14px",
-                    fontWeight: 500,
-                    color: showResidence ? "#111827" : "#374151"
-                  }}>{t('residence')}</span>
-                </button>
+  {/* Section Menu avec le même padding que les items */}
+  <div className="mb-4 pl-4">
+    <span className="text-xs font-medium text-gray-900">
+      Menu
+    </span>
+  </div>
 
-                {/* Statistiques */}
-                <button
-                  onClick={() => {
-                    console.log('[LOG] Clic sur menu Statistiques');
-                    if (showStatistique) {
-                      setShowStatistique(false);
-                    } else {
-                      openPage('statistique');
-                    }
-                  }}
-                  className={`w-full flex items-center rounded-xl transition-all duration-200 hover:bg-gray-100 hover:border hover:border-gray-200 ${
-                    showStatistique ? "bg-gray-100 border border-gray-200" : ""
-                  }`}
-                  style={{
-                    height: "44px",
-                    padding: "0 12px"
-                  }}
-                >
-                  <div style={{
-                    width: "36px",
-                    display: "flex",
-                    justifyContent: "center",
-                    marginRight: "10px"
-                  }}>
-                    <BarChart3 size={20} className={showStatistique ? "text-gray-800" : "text-gray-700"} />
-                  </div>
-                  <span style={{
-                    fontSize: "14px",
-                    fontWeight: 500,
-                    color: showStatistique ? "#111827" : "#374151"
-                  }}>{t('statistics')}</span>
-                </button>
+  {/* MENU FIXE - Boutons alignés à gauche avec icônes alignées avec le mot "Menu" */}
+  <div className="space-y-2">
+    {/* Résidences */}
+    <button
+      onClick={() => {
+        console.log('[LOG] Clic sur menu Résidences');
+        if (showResidence) {
+          if (residenceDetailMode) {
+            setResidenceDetailMode(false);
+          } else {
+            setShowResidence(false);
+          }
+        } else {
+          openPage('residence');
+        }
+      }}
+      className={`w-full flex items-center rounded-xl transition-all duration-200 hover:bg-gray-100 hover:border hover:border-gray-200 ${
+        showResidence ? "bg-gray-100 border border-gray-200" : ""
+      }`}
+      style={{
+        height: "44px",
+        paddingLeft: "12px"
+      }}
+    >
+      <MapPin size={20} className={`${showResidence ? "text-gray-800" : "text-gray-700"} mr-2`} />
+      <span style={{
+        fontSize: "14px",
+        fontWeight: 500,
+        color: showResidence ? "#111827" : "#374151"
+      }}>{t('residence')}</span>
+    </button>
 
-                {/* Demandes en attente (seulement pour secrétaire) */}
-                {currentUser?.role === 'secretaire' && (
-                  <button
-                    onClick={() => {
-                      console.log('[LOG] Clic sur menu Demandes en attente');
-                      if (showPendingResidences) {
-                        setShowPendingResidences(false);
-                        setResidenceToSelect(null);
-                      } else {
-                        openPage('pending');
-                      }
-                    }}
-                    className={`w-full flex items-center rounded-xl transition-all duration-200 hover:bg-gray-100 hover:border hover:border-gray-200 ${
-                      showPendingResidences ? "bg-gray-100 border border-gray-200" : ""
-                    }`}
-                    style={{
-                      height: "44px",
-                      padding: "0 12px"
-                    }}
-                  >
-                    <div style={{
-                      width: "36px",
-                      display: "flex",
-                      justifyContent: "center",
-                      marginRight: "10px"
-                    }}>
-                      <ClipboardList size={20} className={showPendingResidences ? "text-gray-800" : "text-gray-700"} />
-                    </div>
-                    <span style={{
-                      fontSize: "14px",
-                      fontWeight: 500,
-                      color: showPendingResidences ? "#111827" : "#374151"
-                    }}>{t('requests')}</span>
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
+    {/* Statistiques */}
+    <button
+      onClick={() => {
+        console.log('[LOG] Clic sur menu Statistiques');
+        if (showStatistique) {
+          setShowStatistique(false);
+        } else {
+          openPage('statistique');
+        }
+      }}
+      className={`w-full flex items-center rounded-xl transition-all duration-200 hover:bg-gray-100 hover:border hover:border-gray-200 ${
+        showStatistique ? "bg-gray-100 border border-gray-200" : ""
+      }`}
+      style={{
+        height: "44px",
+        paddingLeft: "12px"
+      }}
+    >
+      <BarChart3 size={20} className={`${showStatistique ? "text-gray-800" : "text-gray-700"} mr-2`} />
+      <span style={{
+        fontSize: "14px",
+        fontWeight: 500,
+        color: showStatistique ? "#111827" : "#374151"
+      }}>{t('statistics')}</span>
+    </button>
+
+    {/* Demandes en attente (seulement pour secrétaire) */}
+    {currentUser?.role === 'secretaire' && (
+      <button
+        onClick={() => {
+          console.log('[LOG] Clic sur menu Demandes en attente');
+          if (showPendingResidences) {
+            setShowPendingResidences(false);
+            setResidenceToSelect(null);
+          } else {
+            openPage('pending');
+          }
+        }}
+        className={`w-full flex items-center rounded-xl transition-all duration-200 hover:bg-gray-100 hover:border hover:border-gray-200 ${
+          showPendingResidences ? "bg-gray-100 border border-gray-200" : ""
+        }`}
+        style={{
+          height: "44px",
+          paddingLeft: "12px"
+        }}
+      >
+        <ClipboardList size={20} className={`${showPendingResidences ? "text-gray-800" : "text-gray-700"} mr-2`} />
+        <span style={{
+          fontSize: "14px",
+          fontWeight: 500,
+          color: showPendingResidences ? "#111827" : "#374151"
+        }}>{t('requests')}</span>
+      </button>
+    )}
+  </div>
+</div>
         </div>
       </div>
 
